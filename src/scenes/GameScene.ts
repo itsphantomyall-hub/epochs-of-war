@@ -37,6 +37,7 @@ import { LifetimeSystem } from '../core/systems/LifetimeSystem';
 import { AIDirector, Difficulty } from '../ai/AIDirector';
 import { SettingsManager } from '../core/managers/SettingsManager';
 import { AudioManager } from '../audio/AudioManager';
+import { CampaignManager, MissionConfig } from '../core/managers/CampaignManager';
 
 // Config JSON imports
 import heroesJson from '../config/heroes.json';
@@ -218,6 +219,16 @@ export class GameScene extends Phaser.Scene {
   // ── Difficulty (passed from MainMenu via scene data) ──
   private difficulty: 'easy' | 'normal' | 'hard' = 'normal';
 
+  // ── Campaign mode ──
+  private mode: 'classic' | 'campaign' = 'classic';
+  private missionId?: number;
+  private currentMission?: MissionConfig;
+  private campaignManager?: CampaignManager;
+  private campaignStars?: number;
+  private turretsDisabled = false;
+  private passiveIncomeDisabled = false;
+  private evolutionLocked = false;
+
   // ── Constants ──
   private static readonly GROUND_Y = 560;
   private static readonly PLAYER_BASE_X = 80;
@@ -227,8 +238,18 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'GameScene' });
   }
 
-  init(data?: { difficulty?: 'easy' | 'normal' | 'hard' }): void {
+  init(data?: { difficulty?: 'easy' | 'normal' | 'hard'; mode?: 'classic' | 'campaign'; missionId?: number }): void {
     this.difficulty = data?.difficulty ?? 'normal';
+    this.mode = data?.mode ?? 'classic';
+    this.missionId = data?.missionId;
+
+    // Reset campaign state
+    this.currentMission = undefined;
+    this.campaignManager = undefined;
+    this.campaignStars = undefined;
+    this.turretsDisabled = false;
+    this.passiveIncomeDisabled = false;
+    this.evolutionLocked = false;
   }
 
   create(): void {
@@ -359,14 +380,53 @@ export class GameScene extends Phaser.Scene {
     // ── Deploy initial hero (age 1) for player ──
     this.heroEntityId = this.heroManager.deployHero('player', 1);
 
-    // ── Auto-build one turret in slot 0 at game start ──
-    const age1TurretIds = this.playerAgeSystem.getAvailableTurretIds();
-    const antiInfantryTurret = age1TurretIds.find((id) => {
-      const cfg = this.playerTurretManager.getTurretConfig(id);
-      return cfg && cfg.category === 'anti_infantry';
-    }) ?? age1TurretIds[0];
-    if (antiInfantryTurret) {
-      this.playerTurretManager.buildTurret(0, antiInfantryTurret);
+    // ── Auto-build one turret in slot 0 at game start (skip if turrets disabled) ──
+    if (!this.turretsDisabled) {
+      const age1TurretIds = this.playerAgeSystem.getAvailableTurretIds();
+      const antiInfantryTurret = age1TurretIds.find((id) => {
+        const cfg = this.playerTurretManager.getTurretConfig(id);
+        return cfg && cfg.category === 'anti_infantry';
+      }) ?? age1TurretIds[0];
+      if (antiInfantryTurret) {
+        this.playerTurretManager.buildTurret(0, antiInfantryTurret);
+      }
+    }
+
+    // ── Campaign mode setup ──
+    if (this.mode === 'campaign' && this.missionId != null) {
+      this.campaignManager = new CampaignManager();
+      this.currentMission = this.campaignManager.getMission(this.missionId);
+      if (this.currentMission) {
+        // Apply start age: evolve both sides to the mission's starting age
+        if (this.currentMission.startAge && this.currentMission.startAge > 1) {
+          for (let i = 1; i < this.currentMission.startAge; i++) {
+            this.playerEconomy.addXP(9999);
+            this.playerAgeSystem.evolve();
+            this.enemyEconomy.addXP(9999);
+            this.enemyAgeSystem.evolve();
+          }
+          // Sync age into game state
+          this.gameState.player.currentAge = this.playerAgeSystem.getCurrentAge();
+          this.gameState.enemy.currentAge = this.enemyAgeSystem.getCurrentAge();
+          // Update base HP for new age
+          const newBaseHp = this.playerAgeSystem.getBaseHp();
+          this.gameState.player.baseMaxHp = newBaseHp;
+          this.gameState.player.baseHp = newBaseHp;
+          this.gameState.enemy.baseMaxHp = Math.round(newBaseHp * (difficultyHpMultiplier[this.difficulty] ?? 1));
+          this.gameState.enemy.baseHp = this.gameState.enemy.baseMaxHp;
+          this.gameManager.setPlayerBaseHp(this.gameState.player.baseHp);
+          this.gameManager.setEnemyBaseHp(this.gameState.enemy.baseHp);
+          // Redeploy hero for new age
+          this.heroEntityId = this.heroManager.onAgeUp('player', this.playerAgeSystem.getCurrentAge());
+        }
+        // Apply mission difficulty override
+        if (this.currentMission.difficulty) {
+          const missionDiff = this.currentMission.difficulty === 'medium' ? 'normal' : this.currentMission.difficulty;
+          this.difficulty = missionDiff as 'easy' | 'normal' | 'hard';
+        }
+        // Apply campaign modifiers
+        this.applyCampaignModifiers(this.currentMission.modifiers || []);
+      }
     }
 
     // ── Wire ECS events ──
@@ -1127,6 +1187,7 @@ export class GameScene extends Phaser.Scene {
   // ─────────────────────── GAME ACTIONS ───────────────────────
 
   private tryEvolve(): void {
+    if (this.evolutionLocked) return;
     if (this.playerAgeSystem.canEvolve()) {
       const newAgeConfig = this.playerAgeSystem.evolve();
       if (newAgeConfig) {
@@ -1232,6 +1293,56 @@ export class GameScene extends Phaser.Scene {
     this.particles.spawnLargeExplosion(screenTargetX, GameScene.GROUND_Y - 20);
   }
 
+  private applyCampaignModifiers(modifiers: string[]): void {
+    for (const mod of modifiers) {
+      switch (mod) {
+        case 'no_turrets':
+          this.turretsDisabled = true;
+          // Remove any turrets already built
+          for (const slot of this.playerTurretManager.getOccupiedSlots()) {
+            this.playerTurretManager.sellTurret(slot);
+          }
+          break;
+        case 'famine':
+          this.passiveIncomeDisabled = true;
+          break;
+        case 'locked_age':
+          this.evolutionLocked = true;
+          break;
+        case 'arms_race':
+          // Both sides auto-evolve every 2 minutes
+          this.time.addEvent({
+            delay: 120000,
+            loop: true,
+            callback: () => {
+              this.playerEconomy.addXP(9999);
+              if (this.playerAgeSystem.canEvolve()) this.playerAgeSystem.evolve();
+              this.enemyEconomy.addXP(9999);
+              if (this.enemyAgeSystem.canEvolve()) this.enemyAgeSystem.evolve();
+            },
+          });
+          break;
+        case 'scorched_earth':
+          // Both bases lose HP over time after 5 minutes
+          this.time.addEvent({
+            delay: 1000,
+            loop: true,
+            callback: () => {
+              const elapsed = this.gameState.elapsedTime;
+              if (elapsed > 300) {
+                const dmg = Math.floor(elapsed / 60);
+                this.gameState.player.baseHp = Math.max(0, this.gameState.player.baseHp - dmg);
+                this.gameState.enemy.baseHp = Math.max(0, this.gameState.enemy.baseHp - dmg);
+                this.gameManager.setPlayerBaseHp(this.gameState.player.baseHp);
+                this.gameManager.setEnemyBaseHp(this.gameState.enemy.baseHp);
+              }
+            },
+          });
+          break;
+      }
+    }
+  }
+
   /** Convert screen X back to ECS X for targeting. */
   private screenToEcsX(screenX: number): number {
     const t = (screenX - GameScene.PLAYER_BASE_X) / (GameScene.ENEMY_BASE_X - GameScene.PLAYER_BASE_X);
@@ -1326,7 +1437,9 @@ export class GameScene extends Phaser.Scene {
       this.turretSystem.update(this.gameManager.world, deltaSec);
 
       // 13. Economy (passive income + tech bonuses)
-      this.playerEconomy.update(deltaSec);
+      if (!this.passiveIncomeDisabled) {
+        this.playerEconomy.update(deltaSec);
+      }
       this.enemyEconomy.update(deltaSec);
 
       // Apply tech tree income bonus (Trade Routes: +5 gold/s)
@@ -1448,6 +1561,15 @@ export class GameScene extends Phaser.Scene {
     if (this.gameManager.state === 'victory' && !this.gameState.isGameOver) {
       this.gameState.isGameOver = true;
       this.gameState.winner = 'player';
+
+      // Campaign: calculate stars and save progress
+      if (this.mode === 'campaign' && this.currentMission && this.campaignManager) {
+        const elapsed = this.gameState.elapsedTime;
+        const hpPct = (this.gameState.player.baseHp / this.gameState.player.baseMaxHp) * 100;
+        this.campaignStars = this.campaignManager.calculateStars(this.currentMission.id, elapsed, hpPct);
+        this.campaignManager.completeMission(this.currentMission.id, this.campaignStars);
+      }
+
       this.playBaseCollapse('enemy');
     } else if (this.gameManager.state === 'defeat' && !this.gameState.isGameOver) {
       this.gameState.isGameOver = true;
@@ -1880,12 +2002,24 @@ export class GameScene extends Phaser.Scene {
   // ─────────────────────── END SCREEN ───────────────────────
 
   private showEndScreen(text: string, color: string): void {
-    this.add.rectangle(640, 360, 400, 200, 0x000000, 0.85).setDepth(9998);
-    this.add.text(640, 330, text, {
+    const panelH = this.mode === 'campaign' && this.campaignStars ? 240 : 200;
+    this.add.rectangle(640, 360, 400, panelH, 0x000000, 0.85).setDepth(9998);
+    this.add.text(640, 310, text, {
       fontSize: '48px', fontFamily: 'monospace', color, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(9999);
 
-    const menuBtn = this.add.text(640, 400, 'Main Menu', {
+    // Campaign: show star rating
+    if (this.mode === 'campaign' && this.campaignStars) {
+      const starText = '\u2605'.repeat(this.campaignStars) + '\u2606'.repeat(3 - this.campaignStars);
+      this.add.text(640, 365, starText, {
+        fontSize: '36px', fontFamily: 'monospace', color: '#FFD700',
+      }).setOrigin(0.5).setDepth(9999);
+    }
+
+    const btnText = this.mode === 'campaign' ? 'Back to Campaign' : 'Main Menu';
+    const targetScene = this.mode === 'campaign' ? 'CampaignMapScene' : 'MainMenuScene';
+
+    const menuBtn = this.add.text(640, this.mode === 'campaign' && this.campaignStars ? 420 : 400, btnText, {
       fontSize: '20px', fontFamily: 'monospace', color: '#ffffff',
       backgroundColor: '#333333', padding: { x: 20, y: 8 },
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true });
@@ -1910,7 +2044,7 @@ export class GameScene extends Phaser.Scene {
       this.juice.destroy();
 
       this.scene.stop('HUD');
-      this.scene.start('MainMenuScene');
+      this.scene.start(targetScene);
     });
   }
 }
