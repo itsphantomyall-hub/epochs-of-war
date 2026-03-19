@@ -1,5 +1,14 @@
 import Phaser from 'phaser';
 import { GameState, createInitialGameState } from '../types/GameState';
+import { ConfigLoader } from '../utils/ConfigLoader';
+
+/** Data shape for unit button definitions pushed from GameScene. */
+export interface UnitDef {
+  name: string;
+  cost: number;
+  key: string;
+  unitId?: string;
+}
 
 /**
  * Unit button data for the bottom bar.
@@ -61,16 +70,20 @@ export class HUD extends Phaser.Scene {
   private static readonly BUTTON_H = 56;
   private static readonly BUTTON_GAP = 8;
 
-  // ── Placeholder unit data (will come from config JSONs later) ──
-  private unitDefs = [
+  // ── Unit data (updated from config via updateUnitDefs) ──
+  private unitDefs: UnitDef[] = [
     { name: 'Infantry', cost: 15, key: 'Q' },
     { name: 'Ranged', cost: 25, key: 'W' },
     { name: 'Heavy', cost: 100, key: 'E' },
     { name: 'Special', cost: 80, key: 'R' },
   ];
 
+  // ── ConfigLoader for XP thresholds ──
+  private configLoader: ConfigLoader | null = null;
+
   // ── Cooldown timers (0 = ready, >0 = seconds remaining) ──
   private unitCooldowns = [0, 0, 0, 0];
+  private unitCooldownMaxes = [2, 2, 2, 2]; // actual spawn times, updated by startUnitCooldown
   private specialCooldown = 0;
   private specialMaxCooldown = 30;
   private heroCooldowns = [0, 0];
@@ -303,7 +316,7 @@ export class HUD extends Phaser.Scene {
       if (onCooldown) {
         this.unitCooldowns[btn.index] = Math.max(0, this.unitCooldowns[btn.index] - delta / 1000);
         // Show cooldown as a fill from bottom
-        const maxCooldown = 2; // placeholder max
+        const maxCooldown = this.unitCooldownMaxes[btn.index] || 2;
         const ratio = this.unitCooldowns[btn.index] / maxCooldown;
         btn.cooldownOverlay.setSize(HUD.BUTTON_W, HUD.BUTTON_H * ratio);
         btn.cooldownOverlay.setVisible(true);
@@ -393,6 +406,7 @@ export class HUD extends Phaser.Scene {
   startUnitCooldown(index: number, duration: number): void {
     if (index >= 0 && index < 4) {
       this.unitCooldowns[index] = duration;
+      this.unitCooldownMaxes[index] = duration;
     }
   }
 
@@ -409,19 +423,50 @@ export class HUD extends Phaser.Scene {
     }
   }
 
+  /**
+   * Update the unit button labels with actual unit configs from the current age.
+   * Called by GameScene on create and whenever the player evolves.
+   */
+  updateUnitDefs(units: UnitDef[]): void {
+    this.unitDefs = units.slice(0, 4);
+
+    // Pad to 4 if fewer units
+    while (this.unitDefs.length < 4) {
+      this.unitDefs.push({ name: '---', cost: 0, key: ['Q', 'W', 'E', 'R'][this.unitDefs.length] });
+    }
+
+    // Update existing button text objects
+    for (let i = 0; i < this.unitButtons.length; i++) {
+      const btn = this.unitButtons[i];
+      const def = this.unitDefs[i];
+      btn.nameText.setText(def.name);
+      btn.costText.setText(`$${def.cost}`);
+      btn.keyText.setText(`[${def.key}]`);
+    }
+
+    // Reset cooldowns on age change
+    this.unitCooldowns = [0, 0, 0, 0];
+  }
+
   // ─────────────────────── HELPERS ───────────────────────
 
   private getXpToNext(currentAge: number): number {
-    // Placeholder XP thresholds per age (will come from age config JSON)
+    // Use ConfigLoader if available, otherwise fallback
+    if (!this.configLoader) {
+      try {
+        this.configLoader = new ConfigLoader();
+      } catch {
+        // Fallback to hardcoded thresholds
+      }
+    }
+
+    if (this.configLoader) {
+      return this.configLoader.getXpToNext(currentAge);
+    }
+
+    // Fallback thresholds
     const thresholds: Record<number, number> = {
-      1: 200,
-      2: 400,
-      3: 700,
-      4: 1200,
-      5: 2000,
-      6: 3500,
-      7: 6000,
-      8: 0, // max age
+      1: 100, 2: 250, 3: 500, 4: 900, 5: 1400, 6: 2200, 7: 3500, 8: 0,
     };
     return thresholds[currentAge] ?? 500;
   }

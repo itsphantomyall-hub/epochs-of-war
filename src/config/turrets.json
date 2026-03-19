@@ -1,0 +1,340 @@
+{
+  "turrets": {
+    "rock_dropper": {
+      "id": "rock_dropper",
+      "displayName": "Rock Dropper",
+      "age": 1,
+      "category": "anti_infantry",
+      "stats": {
+        "damage": 15,
+        "fireRate": 0.8,
+        "range": 120,
+        "splashRadius": 0,
+        "hp": 150,
+        "cost": 50
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 15, "fireRate": 0.8 },
+        { "level": 2, "cost": 40, "damage": 19, "fireRate": 0.92 },
+        { "level": 3, "cost": 80, "damage": 24, "fireRate": 1.06 }
+      ],
+      "projectile": { "type": "rock", "speed": 300 },
+      "targeting": "nearest"
+    },
+    "tar_pit": {
+      "id": "tar_pit",
+      "displayName": "Tar Pit",
+      "age": 1,
+      "category": "anti_heavy",
+      "stats": {
+        "damage": 5,
+        "fireRate": 1.0,
+        "range": 100,
+        "splashRadius": 60,
+        "hp": 200,
+        "cost": 75
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 5, "fireRate": 1.0 },
+        { "level": 2, "cost": 60, "damage": 7, "fireRate": 1.15 },
+        { "level": 3, "cost": 120, "damage": 9, "fireRate": 1.32 }
+      ],
+      "projectile": { "type": "tar", "speed": 0 },
+      "targeting": "nearest"
+    },
+    "arrow_slit": {
+      "id": "arrow_slit",
+      "displayName": "Arrow Slit",
+      "age": 2,
+      "category": "anti_infantry",
+      "stats": {
+        "damage": 12,
+        "fireRate": 2.0,
+        "range": 150,
+        "splashRadius": 0,
+        "hp": 180,
+        "cost": 80
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 12, "fireRate": 2.0 },
+        { "level": 2, "cost": 65, "damage": 15, "fireRate": 2.3 },
+        { "level": 3, "cost": 130, "damage": 19, "fireRate": 2.65 }
+      ],
+      "projectile": { "type": "arrow", "speed": 500 },
+      "targeting": "nearest"
+    },
+    "boiling_oil": {
+      "id": "boiling_oil",
+      "displayName": "Boiling Oil",
+      "age": 2,
+      "category": "anti_heavy",
+      "stats": {
+        "damage": 30,
+        "fireRate": 0.5,
+        "range": 100,
+        "splashRadius": 50,
+        "hp": 220,
+        "cost": 120
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 30, "fireRate": 0.5 },
+        { "level": 2, "cost": 95, "damage": 38, "fireRate": 0.58 },
+        { "level": 3, "cost": 190, "damage": 48, "fireRate": 0.67 }
+      ],
+      "projectile": { "type": "oil", "speed": 0 },
+      "targeting": "nearest"
+    },
+    "ballista": {
+      "id": "ballista",
+      "displayName": "Ballista",
+      "age": 3,
+      "category": "anti_infantry",
+      "stats": {
+        "damage": 25,
+        "fireRate": 1.2,
+        "range": 200,
+        "splashRadius": 0,
+        "hp": 200,
+        "cost": 150
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 25, "fireRate": 1.2 },
+        { "level": 2, "cost": 120, "damage": 31, "fireRate": 1.38 },
+        { "level": 3, "cost": 240, "damage": 39, "fireRate": 1.59 }
+      ],
+      "projectile": { "type": "bolt", "speed": 600 },
+      "targeting": "nearest"
+    },
+    "catapult": {
+      "id": "catapult",
+      "displayName": "Catapult",
+      "age": 3,
+      "category": "anti_heavy",
+      "stats": {
+        "damage": 50,
+        "fireRate": 0.4,
+        "range": 250,
+        "splashRadius": 70,
+        "hp": 250,
+        "cost": 200
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 50, "fireRate": 0.4 },
+        { "level": 2, "cost": 160, "damage": 63, "fireRate": 0.46 },
+        { "level": 3, "cost": 320, "damage": 79, "fireRate": 0.53 }
+      ],
+      "projectile": { "type": "boulder", "speed": 250 },
+      "targeting": "nearest"
+    },
+    "repeating_crossbow": {
+      "id": "repeating_crossbow",
+      "displayName": "Repeating Crossbow",
+      "age": 4,
+      "category": "anti_infantry",
+      "stats": {
+        "damage": 18,
+        "fireRate": 3.0,
+        "range": 180,
+        "splashRadius": 0,
+        "hp": 220,
+        "cost": 250
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 18, "fireRate": 3.0 },
+        { "level": 2, "cost": 200, "damage": 23, "fireRate": 3.45 },
+        { "level": 3, "cost": 400, "damage": 29, "fireRate": 3.97 }
+      ],
+      "projectile": { "type": "bolt", "speed": 550 },
+      "targeting": "nearest"
+    },
+    "trebuchet_tower": {
+      "id": "trebuchet_tower",
+      "displayName": "Trebuchet Tower",
+      "age": 4,
+      "category": "anti_heavy",
+      "stats": {
+        "damage": 80,
+        "fireRate": 0.3,
+        "range": 350,
+        "splashRadius": 60,
+        "hp": 300,
+        "cost": 350
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 80, "fireRate": 0.3 },
+        { "level": 2, "cost": 280, "damage": 100, "fireRate": 0.35 },
+        { "level": 3, "cost": 560, "damage": 125, "fireRate": 0.40 }
+      ],
+      "projectile": { "type": "boulder", "speed": 200 },
+      "targeting": "nearest"
+    },
+    "grape_shot_cannon": {
+      "id": "grape_shot_cannon",
+      "displayName": "Grape Shot Cannon",
+      "age": 5,
+      "category": "anti_infantry",
+      "stats": {
+        "damage": 40,
+        "fireRate": 1.0,
+        "range": 200,
+        "splashRadius": 40,
+        "hp": 280,
+        "cost": 400
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 40, "fireRate": 1.0 },
+        { "level": 2, "cost": 320, "damage": 50, "fireRate": 1.15 },
+        { "level": 3, "cost": 640, "damage": 63, "fireRate": 1.32 }
+      ],
+      "projectile": { "type": "grapeshot", "speed": 400 },
+      "targeting": "nearest"
+    },
+    "long_cannon": {
+      "id": "long_cannon",
+      "displayName": "Long Cannon",
+      "age": 5,
+      "category": "anti_heavy",
+      "stats": {
+        "damage": 100,
+        "fireRate": 0.35,
+        "range": 400,
+        "splashRadius": 0,
+        "hp": 320,
+        "cost": 500
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 100, "fireRate": 0.35 },
+        { "level": 2, "cost": 400, "damage": 125, "fireRate": 0.40 },
+        { "level": 3, "cost": 800, "damage": 156, "fireRate": 0.46 }
+      ],
+      "projectile": { "type": "cannonball", "speed": 500 },
+      "targeting": "nearest"
+    },
+    "gatling_tower": {
+      "id": "gatling_tower",
+      "displayName": "Gatling Tower",
+      "age": 6,
+      "category": "anti_infantry",
+      "stats": {
+        "damage": 15,
+        "fireRate": 6.0,
+        "range": 220,
+        "splashRadius": 0,
+        "hp": 350,
+        "cost": 600
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 15, "fireRate": 6.0 },
+        { "level": 2, "cost": 480, "damage": 19, "fireRate": 6.9 },
+        { "level": 3, "cost": 960, "damage": 24, "fireRate": 7.94 }
+      ],
+      "projectile": { "type": "bullet", "speed": 800 },
+      "targeting": "nearest"
+    },
+    "howitzer": {
+      "id": "howitzer",
+      "displayName": "Howitzer",
+      "age": 6,
+      "category": "anti_heavy",
+      "stats": {
+        "damage": 120,
+        "fireRate": 0.3,
+        "range": 350,
+        "splashRadius": 80,
+        "hp": 400,
+        "cost": 800
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 120, "fireRate": 0.3 },
+        { "level": 2, "cost": 640, "damage": 150, "fireRate": 0.35 },
+        { "level": 3, "cost": 1280, "damage": 188, "fireRate": 0.40 }
+      ],
+      "projectile": { "type": "shell", "speed": 350 },
+      "targeting": "nearest"
+    },
+    "sam_turret": {
+      "id": "sam_turret",
+      "displayName": "SAM Turret",
+      "age": 7,
+      "category": "anti_infantry",
+      "stats": {
+        "damage": 60,
+        "fireRate": 1.5,
+        "range": 300,
+        "splashRadius": 30,
+        "hp": 400,
+        "cost": 1000
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 60, "fireRate": 1.5 },
+        { "level": 2, "cost": 800, "damage": 75, "fireRate": 1.73 },
+        { "level": 3, "cost": 1600, "damage": 94, "fireRate": 1.99 }
+      ],
+      "projectile": { "type": "missile", "speed": 700 },
+      "targeting": "nearest"
+    },
+    "missile_launcher": {
+      "id": "missile_launcher",
+      "displayName": "Missile Launcher",
+      "age": 7,
+      "category": "anti_heavy",
+      "stats": {
+        "damage": 150,
+        "fireRate": 0.4,
+        "range": 400,
+        "splashRadius": 50,
+        "hp": 450,
+        "cost": 1500
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 150, "fireRate": 0.4 },
+        { "level": 2, "cost": 1200, "damage": 188, "fireRate": 0.46 },
+        { "level": 3, "cost": 2400, "damage": 235, "fireRate": 0.53 }
+      ],
+      "projectile": { "type": "tracking_missile", "speed": 500 },
+      "targeting": "nearest"
+    },
+    "laser_grid": {
+      "id": "laser_grid",
+      "displayName": "Laser Grid",
+      "age": 8,
+      "category": "anti_infantry",
+      "stats": {
+        "damage": 45,
+        "fireRate": 4.0,
+        "range": 280,
+        "splashRadius": 0,
+        "hp": 500,
+        "cost": 1500
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 45, "fireRate": 4.0 },
+        { "level": 2, "cost": 1200, "damage": 56, "fireRate": 4.6 },
+        { "level": 3, "cost": 2400, "damage": 70, "fireRate": 5.29 }
+      ],
+      "projectile": { "type": "laser", "speed": 1500 },
+      "targeting": "nearest"
+    },
+    "ion_cannon": {
+      "id": "ion_cannon",
+      "displayName": "Ion Cannon",
+      "age": 8,
+      "category": "anti_heavy",
+      "stats": {
+        "damage": 200,
+        "fireRate": 0.25,
+        "range": 450,
+        "splashRadius": 60,
+        "hp": 600,
+        "cost": 2500
+      },
+      "upgrades": [
+        { "level": 1, "cost": 0, "damage": 200, "fireRate": 0.25 },
+        { "level": 2, "cost": 2000, "damage": 250, "fireRate": 0.29 },
+        { "level": 3, "cost": 4000, "damage": 313, "fireRate": 0.33 }
+      ],
+      "projectile": { "type": "ion_beam", "speed": 2000 },
+      "targeting": "nearest"
+    }
+  }
+}

@@ -1,29 +1,29 @@
 import Phaser from 'phaser';
 import { GameState, createInitialGameState } from '../types/GameState';
-import { UnitType } from '../types/Unit';
+import { UnitConfig } from '../types/Unit';
 import { FloatingTextManager } from '../ui/FloatingText';
 import { HUD } from '../ui/HUD';
+import { GameManager } from '../core/managers/GameManager';
+import { ConfigLoader } from '../utils/ConfigLoader';
+import { EconomySystem } from '../core/systems/EconomySystem';
+import { AgeSystem } from '../core/systems/AgeSystem';
+import { SpawnRequest } from '../core/systems/SpawnSystem';
+import type { Position } from '../core/components/Position';
+import type { Faction } from '../core/components/Faction';
+import type { Renderable } from '../core/components/Renderable';
+import type { UnitType as UnitTypeComponent } from '../core/components/UnitType';
+import type { UnitType } from '../types/Unit';
 
 /**
- * Runtime entity for rendering. In the full game these will come from the ECS
- * World; for now we use a simple local array of placeholder objects.
+ * Size (w, h) per unit archetype used for placeholder rectangles.
+ * Same visual style as the original scene.
  */
-interface RenderEntity {
-  id: number;
-  x: number;
-  y: number;
-  faction: 'player' | 'enemy';
-  unitType: UnitType;
-  rect: Phaser.GameObjects.Rectangle;
-  alive: boolean;
-}
-
-/** Size (w, h) per unit type used for placeholder rectangles. */
-const UNIT_SIZES: Record<UnitType, [number, number]> = {
+const UNIT_SIZES: Record<string, [number, number]> = {
   infantry: [16, 24],
   ranged: [14, 22],
   heavy: [24, 32],
   special: [20, 28],
+  hero: [28, 36],
 };
 
 /** Color per faction. */
@@ -35,19 +35,24 @@ const FACTION_COLORS: Record<string, number> = {
 /**
  * GameScene — the main battlefield scene.
  *
- * - 1280x720 game area
- * - Simple colored ground
- * - 2 placeholder bases (rectangles)
- * - Launches the HUD overlay scene
- * - Handles keyboard input
- * - Renders entities as colored rectangles
+ * Uses the real ECS engine via GameManager, ConfigLoader,
+ * EconomySystem, and AgeSystem for all game logic.
  */
 export class GameScene extends Phaser.Scene {
+  // ── ECS & managers ──
+  private gameManager!: GameManager;
+  private configLoader!: ConfigLoader;
+  private playerEconomy!: EconomySystem;
+  private enemyEconomy!: EconomySystem;
+  private playerAgeSystem!: AgeSystem;
+  private enemyAgeSystem!: AgeSystem;
+
   // ── State ──
   private gameState!: GameState;
-  private entities: RenderEntity[] = [];
-  private nextEntityId = 0;
   private floatingText!: FloatingTextManager;
+
+  // ── Phaser rectangle pool: ECS entityId → Phaser rectangle ──
+  private entityRects: Map<number, Phaser.GameObjects.Rectangle> = new Map();
 
   // ── Bases ──
   private playerBase!: Phaser.GameObjects.Rectangle;
@@ -76,7 +81,6 @@ export class GameScene extends Phaser.Scene {
   private static readonly GROUND_Y = 560;
   private static readonly PLAYER_BASE_X = 80;
   private static readonly ENEMY_BASE_X = 1200;
-  private static readonly GOLD_PER_SECOND = 5; // passive income placeholder
 
   constructor() {
     super({ key: 'GameScene' });
@@ -89,14 +93,39 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     this.gameState = createInitialGameState();
 
+    // ── Instantiate ECS engine ──
+    this.configLoader = new ConfigLoader();
+    this.gameManager = new GameManager();
+
+    // ── Economy systems (one per side) ──
+    this.playerEconomy = new EconomySystem(this.gameState.player.gold, 1);
+    this.enemyEconomy = new EconomySystem(this.gameState.enemy.gold, 1);
+
+    // ── Age systems ──
+    this.playerAgeSystem = new AgeSystem(this.configLoader, this.playerEconomy, 1);
+    this.enemyAgeSystem = new AgeSystem(this.configLoader, this.enemyEconomy, 1);
+
+    // Set initial base HP from age system
+    const initialBaseHp = this.playerAgeSystem.getBaseHp();
+    this.gameState.player.baseHp = initialBaseHp;
+    this.gameState.player.baseMaxHp = initialBaseHp;
+    this.gameState.enemy.baseHp = initialBaseHp;
+    this.gameState.enemy.baseMaxHp = initialBaseHp;
+
     // Apply difficulty multiplier to enemy base HP
     const difficultyHpMultiplier: Record<string, number> = { easy: 0.7, normal: 1, hard: 1.4 };
     const mult = difficultyHpMultiplier[this.difficulty] ?? 1;
     this.gameState.enemy.baseMaxHp = Math.round(this.gameState.enemy.baseMaxHp * mult);
     this.gameState.enemy.baseHp = this.gameState.enemy.baseMaxHp;
 
+    // ── Wire ECS events ──
+    this.wireEvents();
+
     // Share game state with HUD via the data manager
     this.data.set('gameState', this.gameState);
+
+    // Clear any leftover entity rects from a previous game
+    this.entityRects = new Map();
 
     // Draw the world
     this.createGround();
@@ -110,6 +139,83 @@ export class GameScene extends Phaser.Scene {
 
     // Launch HUD overlay scene
     this.scene.launch('HUD');
+
+    // Push initial unit defs to HUD after it's created
+    this.time.delayedCall(50, () => {
+      this.pushUnitDefsToHUD();
+    });
+  }
+
+  // ─────────────────────── EVENT WIRING ───────────────────────
+
+  private wireEvents(): void {
+    // Death events: earn gold/xp for kills
+    this.gameManager.events.on('death', (e) => {
+      if (e.faction === 'enemy') {
+        // Player killed an enemy — player earns rewards
+        const reward = this.playerEconomy.earnFromKill(
+          e.unitType as UnitType,
+          this.enemyAgeSystem.getCurrentAge()
+        );
+        // Show floating gold text at the unit's last known position
+        const pos = this.gameManager.world.getComponent<Position>(e.entityId, 'Position');
+        if (pos) {
+          this.floatingText.spawnGold(
+            this.ecsXToScreen(pos.x),
+            GameScene.GROUND_Y - 30,
+            reward.gold
+          );
+        }
+      } else if (e.faction === 'player') {
+        // Enemy killed a player unit — enemy earns rewards
+        this.enemyEconomy.earnFromKill(
+          e.unitType as UnitType,
+          this.playerAgeSystem.getCurrentAge()
+        );
+      }
+    });
+
+    // Damage events: show floating damage numbers
+    this.gameManager.events.on('damage', (e) => {
+      const pos = this.gameManager.world.getComponent<Position>(e.targetId, 'Position');
+      if (pos) {
+        this.floatingText.spawnDamage(
+          this.ecsXToScreen(pos.x),
+          GameScene.GROUND_Y - 20,
+          e.damage
+        );
+      }
+    });
+
+    // Base hit events
+    this.gameManager.events.on('baseHit', (e) => {
+      if (e.faction === 'player') {
+        this.gameState.player.baseHp = Math.max(0, e.remainingHp);
+      } else {
+        this.gameState.enemy.baseHp = Math.max(0, e.remainingHp);
+      }
+    });
+
+    // Game over events
+    this.gameManager.events.on('gameOver', (e) => {
+      this.gameState.isGameOver = true;
+      this.gameState.winner = e.winner;
+      if (e.winner === 'player') {
+        this.showEndScreen('VICTORY!', '#44ff44');
+      } else {
+        this.showEndScreen('DEFEAT', '#ff4444');
+      }
+    });
+  }
+
+  // ─────────────────────── COORDINATE MAPPING ───────────────────────
+  // ECS uses 0-1600 X range. Screen uses 0-1280.
+  // Map: ECS 50 → screen PLAYER_BASE_X (80), ECS 1550 → screen ENEMY_BASE_X (1200)
+
+  private ecsXToScreen(ecsX: number): number {
+    // Linear map: ecsX [50..1550] → screenX [80..1200]
+    const t = (ecsX - 50) / (1550 - 50);
+    return GameScene.PLAYER_BASE_X + t * (GameScene.ENEMY_BASE_X - GameScene.PLAYER_BASE_X);
   }
 
   // ─────────────────────── WORLD SETUP ───────────────────────
@@ -182,20 +288,31 @@ export class GameScene extends Phaser.Scene {
   private handleInput(): void {
     if (!this.keys) return;
 
-    // Unit spawns
-    const unitTypes: UnitType[] = ['infantry', 'ranged', 'heavy', 'special'];
-    const unitCosts = [15, 25, 100, 80];
+    // Unit spawns (Q/W/E/R → unit slots 0-3 of current age)
+    const currentUnits = this.playerAgeSystem.getAvailableUnits();
     const spawnKeys = [this.keys.Q, this.keys.W, this.keys.E, this.keys.R];
+    const unitIds = this.playerAgeSystem.getAvailableUnitIds();
 
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < Math.min(4, currentUnits.length); i++) {
       if (Phaser.Input.Keyboard.JustDown(spawnKeys[i])) {
-        if (this.gameState.player.gold >= unitCosts[i]) {
-          this.gameState.player.gold -= unitCosts[i];
-          this.spawnUnit('player', unitTypes[i]);
+        const unitConfig = currentUnits[i];
+        const cost = unitConfig.stats.cost;
+
+        if (this.playerEconomy.canAfford(cost)) {
+          this.playerEconomy.spend(cost);
+          this.enqueueSpawn('player', unitIds[i], unitConfig);
 
           // Trigger HUD cooldown
           const hud = this.scene.get('HUD') as HUD | undefined;
-          hud?.startUnitCooldown(i, 2);
+          hud?.startUnitCooldown(i, unitConfig.stats.spawnTime);
+
+          // Show gold spent floating text
+          this.floatingText.spawn(
+            GameScene.PLAYER_BASE_X + 60,
+            GameScene.GROUND_Y - 40,
+            `-${cost}g`,
+            '#ff8888'
+          );
         }
       }
     }
@@ -226,54 +343,62 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  // ─────────────────────── GAME ACTIONS ───────────────────────
+  // ─────────────────────── SPAWNING ───────────────────────
 
-  private spawnUnit(faction: 'player' | 'enemy', unitType: UnitType): void {
-    const [w, h] = UNIT_SIZES[unitType];
-    const spawnX = faction === 'player'
-      ? GameScene.PLAYER_BASE_X + 60
-      : GameScene.ENEMY_BASE_X - 60;
-    const y = GameScene.GROUND_Y - h / 2;
+  private enqueueSpawn(faction: 'player' | 'enemy', unitId: string, unitConfig: UnitConfig): void {
+    const age = faction === 'player'
+      ? this.playerAgeSystem.getCurrentAge()
+      : this.enemyAgeSystem.getCurrentAge();
 
-    const color = FACTION_COLORS[faction];
-    const rect = this.add.rectangle(spawnX, y, w, h, color)
-      .setStrokeStyle(1, 0xffffff)
-      .setDepth(5);
-
-    const entity: RenderEntity = {
-      id: this.nextEntityId++,
-      x: spawnX,
-      y,
+    const req: SpawnRequest = {
       faction,
-      unitType,
-      rect,
-      alive: true,
+      unitId,
+      type: unitConfig.type,
+      age,
+      hp: unitConfig.stats.hp,
+      damage: unitConfig.stats.damage,
+      speed: unitConfig.stats.moveSpeed,
+      range: unitConfig.stats.range,
+      attackSpeed: unitConfig.stats.attackSpeed,
+      projectileType: unitConfig.stats.range > 0 ? 'projectile' : '',
+      spawnTime: unitConfig.stats.spawnTime,
+      spriteKey: unitConfig.visuals?.spriteSheet ?? unitId,
+      cost: unitConfig.stats.cost,
     };
 
-    this.entities.push(entity);
-
-    // Show gold spent floating text for player
-    if (faction === 'player') {
-      const costMap: Record<UnitType, number> = { infantry: 15, ranged: 25, heavy: 100, special: 80 };
-      this.floatingText.spawn(spawnX, y - 20, `-${costMap[unitType]}g`, '#ff8888');
-    }
+    this.gameManager.spawnSystem.enqueue(req);
   }
 
+  // ─────────────────────── GAME ACTIONS ───────────────────────
+
   private tryEvolve(): void {
-    const { player } = this.gameState;
-    const xpNeeded = this.getXpToNext(player.currentAge);
+    if (this.playerAgeSystem.canEvolve()) {
+      const newAgeConfig = this.playerAgeSystem.evolve();
+      if (newAgeConfig) {
+        // Update base HP
+        const newBaseHp = this.playerAgeSystem.getBaseHp();
+        const hpGain = newBaseHp - this.gameState.player.baseMaxHp;
+        this.gameState.player.baseMaxHp = newBaseHp;
+        this.gameState.player.baseHp = Math.min(
+          this.gameState.player.baseHp + hpGain,
+          newBaseHp
+        );
 
-    if (player.currentAge < 8 && player.xp >= xpNeeded) {
-      player.xp -= xpNeeded;
-      player.currentAge++;
+        // Sync age in game state
+        this.gameState.player.currentAge = this.playerAgeSystem.getCurrentAge();
 
-      // Bonus HP on evolution
-      const hpBonus = 100;
-      player.baseMaxHp += hpBonus;
-      player.baseHp = Math.min(player.baseHp + hpBonus, player.baseMaxHp);
+        // Update HUD unit buttons for new age
+        this.pushUnitDefsToHUD();
 
-      // Flash effect
-      this.cameras.main.flash(500, 255, 255, 200);
+        // Flash effect
+        this.cameras.main.flash(500, 255, 255, 200);
+
+        // Emit ageUp event
+        this.gameManager.events.emit('ageUp', {
+          faction: 'player',
+          newAge: this.playerAgeSystem.getCurrentAge(),
+        });
+      }
     }
   }
 
@@ -281,10 +406,23 @@ export class GameScene extends Phaser.Scene {
     const hud = this.scene.get('HUD') as HUD | undefined;
     hud?.startSpecialCooldown(30);
 
-    // Placeholder: damage all enemy units
-    for (const entity of this.entities) {
-      if (entity.faction === 'enemy' && entity.alive) {
-        this.floatingText.spawnDamage(entity.x, entity.y - 16, 50);
+    // Damage all enemy units in the ECS world
+    const combatants = this.gameManager.world.query('Position', 'Faction', 'Health');
+    for (const id of combatants) {
+      const faction = this.gameManager.world.getComponent<Faction>(id, 'Faction');
+      if (faction && faction.faction === 'enemy') {
+        const health = this.gameManager.world.getComponent<{ current: number; max: number }>(id, 'Health');
+        if (health) {
+          health.current -= 50;
+          const pos = this.gameManager.world.getComponent<Position>(id, 'Position');
+          if (pos) {
+            this.floatingText.spawnDamage(
+              this.ecsXToScreen(pos.x),
+              GameScene.GROUND_Y - 20,
+              50
+            );
+          }
+        }
       }
     }
   }
@@ -293,8 +431,9 @@ export class GameScene extends Phaser.Scene {
     this.gameState.isPaused = !this.gameState.isPaused;
 
     if (this.gameState.isPaused) {
+      this.gameManager.pause();
       this.scene.pause();
-      // Show a simple pause overlay (created inline)
+      // Show a simple pause overlay
       const pauseText = this.add.text(640, 360, 'PAUSED\n\nPress ESC to resume', {
         fontSize: '32px',
         fontFamily: 'monospace',
@@ -304,12 +443,87 @@ export class GameScene extends Phaser.Scene {
         padding: { x: 40, y: 20 },
       }).setOrigin(0.5).setDepth(9999).setName('pauseOverlay');
 
-      // Listen for unpause even while paused
       this.input.keyboard?.once('keydown-ESC', () => {
         pauseText.destroy();
         this.gameState.isPaused = false;
+        this.gameManager.resume();
         this.scene.resume();
       });
+    }
+  }
+
+  // ─────────────────────── HUD HELPERS ───────────────────────
+
+  private pushUnitDefsToHUD(): void {
+    const units = this.playerAgeSystem.getAvailableUnits();
+    const unitIds = this.playerAgeSystem.getAvailableUnitIds();
+    const keyNames = ['Q', 'W', 'E', 'R'];
+    const defs = units.slice(0, 4).map((u, i) => ({
+      name: u.displayName,
+      cost: u.stats.cost,
+      key: keyNames[i],
+      unitId: unitIds[i],
+    }));
+    const hud = this.scene.get('HUD') as HUD | undefined;
+    hud?.updateUnitDefs(defs);
+  }
+
+  // ─────────────────────── ENEMY AI ───────────────────────
+
+  private lastEnemySpawnTime = 0;
+
+  private updateEnemyAI(time: number): void {
+    const spawnInterval: Record<string, number> = { easy: 4000, normal: 3000, hard: 2000 };
+    const interval = spawnInterval[this.difficulty] ?? 3000;
+
+    if (time - this.lastEnemySpawnTime > interval) {
+      this.lastEnemySpawnTime = time;
+
+      // Pick from enemy's current age roster
+      const units = this.enemyAgeSystem.getAvailableUnits();
+      const unitIds = this.enemyAgeSystem.getAvailableUnitIds();
+
+      if (units.length > 0) {
+        const idx = Math.floor(Math.random() * units.length);
+        const unitConfig = units[idx];
+        const cost = unitConfig.stats.cost;
+
+        // Enemy AI checks affordability
+        if (this.enemyEconomy.canAfford(cost)) {
+          this.enemyEconomy.spend(cost);
+          this.enqueueSpawn('enemy', unitIds[idx], unitConfig);
+        } else {
+          // Fallback: try to spawn the cheapest unit
+          const sorted = units
+            .map((u, i) => ({ u, i }))
+            .sort((a, b) => a.u.stats.cost - b.u.stats.cost);
+          for (const entry of sorted) {
+            if (this.enemyEconomy.canAfford(entry.u.stats.cost)) {
+              this.enemyEconomy.spend(entry.u.stats.cost);
+              this.enqueueSpawn('enemy', unitIds[entry.i], entry.u);
+              break;
+            }
+          }
+        }
+      }
+
+      // Enemy AI evolves when it can
+      if (this.enemyAgeSystem.canEvolve()) {
+        const newAgeConfig = this.enemyAgeSystem.evolve();
+        if (newAgeConfig) {
+          const newBaseHp = this.enemyAgeSystem.getBaseHp();
+          // Apply difficulty multiplier
+          const diffMult = ({ easy: 0.7, normal: 1, hard: 1.4 } as Record<string, number>)[this.difficulty] ?? 1;
+          const adjustedMax = Math.round(newBaseHp * diffMult);
+          const hpGain = adjustedMax - this.gameState.enemy.baseMaxHp;
+          this.gameState.enemy.baseMaxHp = adjustedMax;
+          this.gameState.enemy.baseHp = Math.min(
+            this.gameState.enemy.baseHp + hpGain,
+            adjustedMax
+          );
+          this.gameState.enemy.currentAge = this.enemyAgeSystem.getCurrentAge();
+        }
+      }
     }
   }
 
@@ -320,101 +534,114 @@ export class GameScene extends Phaser.Scene {
 
     this.handleInput();
 
+    const deltaSec = delta / 1000;
+
     // Update elapsed time
-    this.gameState.elapsedTime += delta / 1000;
+    this.gameState.elapsedTime += deltaSec;
 
-    // Passive gold income
-    this.gameState.player.gold += GameScene.GOLD_PER_SECOND * (delta / 1000);
+    // Run the ECS update loop (Spawn → Movement → Combat → Health → Cleanup)
+    this.gameManager.update(deltaSec);
 
-    // Passive XP income (small trickle)
-    this.gameState.player.xp += 2 * (delta / 1000);
+    // Update economy systems (passive income)
+    this.playerEconomy.update(deltaSec);
+    this.enemyEconomy.update(deltaSec);
 
-    // Update entities (simple movement placeholder)
-    this.updateEntities(delta);
+    // Sync economy → gameState
+    this.gameState.player.gold = this.playerEconomy.getRawGold();
+    this.gameState.player.xp = this.playerEconomy.getXP();
+    this.gameState.player.currentAge = this.playerAgeSystem.getCurrentAge();
 
-    // Enemy AI: periodically spawn a random unit
+    // Sync base HP from GameManager
+    if (this.gameManager.playerBaseHp < this.gameState.player.baseHp) {
+      this.gameState.player.baseHp = Math.max(0, this.gameManager.playerBaseHp);
+    }
+    if (this.gameManager.enemyBaseHp < this.gameState.enemy.baseHp) {
+      this.gameState.enemy.baseHp = Math.max(0, this.gameManager.enemyBaseHp);
+    }
+
+    // Check evolve readiness for HUD
+    // (HUD reads gameState directly, so just sync the xp threshold)
+
+    // Enemy AI
     this.updateEnemyAI(time);
+
+    // Render ECS entities
+    this.renderEntities();
 
     // Sync game state for HUD
     this.data.set('gameState', this.gameState);
 
     // Update floating text
     this.floatingText.update(time, delta);
-  }
 
-  private updateEntities(delta: number): void {
-    const speed = 0.06; // pixels per ms
-
-    for (let i = this.entities.length - 1; i >= 0; i--) {
-      const entity = this.entities[i];
-      if (!entity.alive) continue;
-
-      // Move toward opposite base
-      const targetX = entity.faction === 'player'
-        ? GameScene.ENEMY_BASE_X
-        : GameScene.PLAYER_BASE_X;
-
-      const dir = targetX > entity.x ? 1 : -1;
-      entity.x += dir * speed * delta;
-      entity.rect.setPosition(entity.x, entity.y);
-
-      // Check if entity reached enemy base
-      if (entity.faction === 'player' && entity.x >= GameScene.ENEMY_BASE_X - 30) {
-        // Damage enemy base
-        const dmg = 5;
-        this.gameState.enemy.baseHp = Math.max(0, this.gameState.enemy.baseHp - dmg);
-        this.floatingText.spawnDamage(entity.x, entity.y - 20, dmg);
-
-        // Give gold and XP
-        this.gameState.player.gold += 10;
-        this.gameState.player.xp += 5;
-        this.floatingText.spawnGold(entity.x, entity.y - 30, 10);
-
-        this.destroyEntity(entity);
-      } else if (entity.faction === 'enemy' && entity.x <= GameScene.PLAYER_BASE_X + 30) {
-        // Damage player base
-        const dmg = 5;
-        this.gameState.player.baseHp = Math.max(0, this.gameState.player.baseHp - dmg);
-        this.floatingText.spawnDamage(entity.x, entity.y - 20, dmg);
-
-        this.destroyEntity(entity);
-      }
-    }
-
-    // Check win/lose
-    if (this.gameState.enemy.baseHp <= 0) {
+    // Check win/lose from GameManager state
+    if (this.gameManager.state === 'victory' && !this.gameState.isGameOver) {
       this.gameState.isGameOver = true;
       this.gameState.winner = 'player';
       this.showEndScreen('VICTORY!', '#44ff44');
-    } else if (this.gameState.player.baseHp <= 0) {
+    } else if (this.gameManager.state === 'defeat' && !this.gameState.isGameOver) {
       this.gameState.isGameOver = true;
       this.gameState.winner = 'enemy';
       this.showEndScreen('DEFEAT', '#ff4444');
     }
   }
 
-  private destroyEntity(entity: RenderEntity): void {
-    entity.alive = false;
-    entity.rect.destroy();
-    const idx = this.entities.indexOf(entity);
-    if (idx !== -1) this.entities.splice(idx, 1);
-  }
+  // ─────────────────────── RENDERING ───────────────────────
 
-  // ── Enemy AI (placeholder) ──
-  private lastEnemySpawnTime = 0;
+  private renderEntities(): void {
+    const world = this.gameManager.world;
+    const renderableEntities = world.query('Position', 'Faction', 'Renderable');
 
-  private updateEnemyAI(time: number): void {
-    const spawnInterval: Record<string, number> = { easy: 4000, normal: 3000, hard: 2000 };
-    const interval = spawnInterval[this.difficulty] ?? 3000;
+    // Track which entity IDs are still alive this frame
+    const aliveIds = new Set<number>();
 
-    if (time - this.lastEnemySpawnTime > interval) {
-      this.lastEnemySpawnTime = time;
+    for (const entityId of renderableEntities) {
+      aliveIds.add(entityId);
 
-      const types: UnitType[] = ['infantry', 'ranged', 'heavy', 'special'];
-      const pick = types[Math.floor(Math.random() * types.length)];
-      this.spawnUnit('enemy', pick);
+      const pos = world.getComponent<Position>(entityId, 'Position')!;
+      const faction = world.getComponent<Faction>(entityId, 'Faction')!;
+      const renderable = world.getComponent<Renderable>(entityId, 'Renderable')!;
+      const unitType = world.getComponent<UnitTypeComponent>(entityId, 'UnitType');
+
+      if (!renderable.visible) {
+        // Hide existing rect if invisible
+        const existing = this.entityRects.get(entityId);
+        if (existing) existing.setVisible(false);
+        continue;
+      }
+
+      const archetype = unitType?.type ?? 'infantry';
+      const [w, h] = UNIT_SIZES[archetype] ?? UNIT_SIZES['infantry'];
+      const color = FACTION_COLORS[faction.faction] ?? 0xffffff;
+      const screenX = this.ecsXToScreen(pos.x);
+      const screenY = GameScene.GROUND_Y - h / 2;
+
+      let rect = this.entityRects.get(entityId);
+      if (!rect) {
+        // Create new rectangle for this entity
+        rect = this.add.rectangle(screenX, screenY, w, h, color)
+          .setStrokeStyle(1, 0xffffff)
+          .setDepth(5);
+        this.entityRects.set(entityId, rect);
+      } else {
+        // Update existing rectangle position
+        rect.setPosition(screenX, screenY);
+        rect.setSize(w, h);
+        rect.setFillStyle(color);
+        rect.setVisible(true);
+      }
+    }
+
+    // Remove rectangles for entities that no longer exist
+    for (const [entityId, rect] of this.entityRects) {
+      if (!aliveIds.has(entityId)) {
+        rect.destroy();
+        this.entityRects.delete(entityId);
+      }
     }
   }
+
+  // ─────────────────────── END SCREEN ───────────────────────
 
   private showEndScreen(text: string, color: string): void {
     this.add.rectangle(640, 360, 400, 200, 0x000000, 0.85).setDepth(9998);
@@ -428,20 +655,14 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true });
 
     menuBtn.on('pointerdown', () => {
-      // Clean up
+      // Clean up all entity rectangles
+      for (const [, rect] of this.entityRects) {
+        rect.destroy();
+      }
+      this.entityRects.clear();
+
       this.scene.stop('HUD');
-      this.entities.forEach(e => { if (e.rect) e.rect.destroy(); });
-      this.entities.length = 0;
       this.scene.start('MainMenuScene');
     });
-  }
-
-  // ─────────────────────── HELPERS ───────────────────────
-
-  private getXpToNext(currentAge: number): number {
-    const thresholds: Record<number, number> = {
-      1: 200, 2: 400, 3: 700, 4: 1200, 5: 2000, 6: 3500, 7: 6000, 8: 0,
-    };
-    return thresholds[currentAge] ?? 500;
   }
 }

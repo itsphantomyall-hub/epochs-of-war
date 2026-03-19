@@ -1,0 +1,105 @@
+{
+  "abilities": {
+    "meteor_shower": {
+      "id": "meteor_shower",
+      "name": "Meteor Shower",
+      "age": 1,
+      "cooldown": 45,
+      "effect": {
+        "type": "multi_impact",
+        "impacts": 5,
+        "damage": 80,
+        "radius": 60,
+        "duration": 2
+      }
+    },
+    "chariot_rush": {
+      "id": "chariot_rush",
+      "name": "Chariot Rush",
+      "age": 2,
+      "cooldown": 45,
+      "effect": {
+        "type": "line_damage",
+        "damage": 40,
+        "width": 80,
+        "duration": 1.5
+      }
+    },
+    "rain_of_arrows": {
+      "id": "rain_of_arrows",
+      "name": "Rain of Arrows",
+      "age": 3,
+      "cooldown": 45,
+      "effect": {
+        "type": "area_dot",
+        "damage": 60,
+        "radius": 200,
+        "duration": 3
+      }
+    },
+    "plague": {
+      "id": "plague",
+      "name": "Plague",
+      "age": 4,
+      "cooldown": 45,
+      "effect": {
+        "type": "percent_hp_dot",
+        "percentPerSecond": 5,
+        "radius": 150,
+        "duration": 8
+      }
+    },
+    "naval_bombardment": {
+      "id": "naval_bombardment",
+      "name": "Naval Bombardment",
+      "age": 5,
+      "cooldown": 45,
+      "effect": {
+        "type": "sequential_hits",
+        "hits": 6,
+        "damage": 100,
+        "radius": 40,
+        "duration": 3
+      }
+    },
+    "mustard_gas": {
+      "id": "mustard_gas",
+      "name": "Mustard Gas",
+      "age": 6,
+      "cooldown": 45,
+      "effect": {
+        "type": "area_dot_slow",
+        "dps": 15,
+        "slowPercent": 40,
+        "radius": 250,
+        "duration": 10
+      }
+    },
+    "airstrike": {
+      "id": "airstrike",
+      "name": "Airstrike",
+      "age": 7,
+      "cooldown": 45,
+      "effect": {
+        "type": "wide_splash",
+        "hits": 3,
+        "damage": 120,
+        "radius": 100,
+        "duration": 2
+      }
+    },
+    "orbital_strike": {
+      "id": "orbital_strike",
+      "name": "Orbital Strike",
+      "age": 8,
+      "cooldown": 45,
+      "effect": {
+        "type": "charged_line",
+        "chargeTime": 2,
+        "damage": 500,
+        "width": 300,
+        "duration": 3
+      }
+    }
+  }
+}
