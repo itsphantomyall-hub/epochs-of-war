@@ -1,0 +1,900 @@
+{
+  "units": {
+    "clubman": {
+      "displayName": "Clubman",
+      "age": 1,
+      "type": "infantry",
+      "stats": {
+        "hp": 30,
+        "damage": 8,
+        "attackSpeed": 1.0,
+        "moveSpeed": 3.0,
+        "range": 0,
+        "armor": 0,
+        "cost": 15,
+        "spawnTime": 1.5,
+        "xpReward": 5,
+        "goldReward": 10
+      },
+      "counters": {
+        "strong_vs": ["special", "ranged"],
+        "weak_vs": ["heavy"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Rally",
+        "description": "Nearby allies gain +5% attack speed",
+        "radius": 80,
+        "effect": { "attackSpeed": 1.05 }
+      }
+    },
+    "slinger": {
+      "displayName": "Slinger",
+      "age": 1,
+      "type": "ranged",
+      "stats": {
+        "hp": 20,
+        "damage": 6,
+        "attackSpeed": 1.0,
+        "moveSpeed": 2.5,
+        "range": 120,
+        "armor": 0,
+        "cost": 25,
+        "spawnTime": 2.0,
+        "xpReward": 8,
+        "goldReward": 15
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Focus Fire",
+        "description": "2nd shot on same target deals +10% damage",
+        "radius": 0,
+        "effect": { "damage": 1.10 }
+      }
+    },
+    "dino_rider": {
+      "displayName": "Dino Rider",
+      "age": 1,
+      "type": "heavy",
+      "stats": {
+        "hp": 120,
+        "damage": 20,
+        "attackSpeed": 0.8,
+        "moveSpeed": 1.5,
+        "range": 0,
+        "armor": 0,
+        "cost": 100,
+        "spawnTime": 5.0,
+        "xpReward": 15,
+        "goldReward": 40
+      },
+      "counters": {
+        "strong_vs": ["infantry"],
+        "weak_vs": ["ranged", "special"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Intimidate",
+        "description": "Enemies in range deal -10% damage",
+        "radius": 80,
+        "effect": { "damage": 0.90 }
+      }
+    },
+    "pack_raptors": {
+      "displayName": "Pack Raptors",
+      "age": 1,
+      "type": "special",
+      "stats": {
+        "hp": 25,
+        "damage": 10,
+        "attackSpeed": 1.2,
+        "moveSpeed": 5.0,
+        "range": 0,
+        "armor": 0,
+        "cost": 80,
+        "spawnTime": 4.0,
+        "xpReward": 20,
+        "goldReward": 50
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Pack Tactics",
+        "description": "3 fast units spawn together, flank and overwhelm isolated targets",
+        "radius": 0,
+        "effect": { "spawnCount": 3 }
+      }
+    },
+    "spearman": {
+      "displayName": "Spearman",
+      "age": 2,
+      "type": "infantry",
+      "stats": {
+        "hp": 50,
+        "damage": 12,
+        "attackSpeed": 1.0,
+        "moveSpeed": 2.8,
+        "range": 0,
+        "armor": 0,
+        "cost": 30,
+        "spawnTime": 1.5,
+        "xpReward": 6,
+        "goldReward": 12
+      },
+      "counters": {
+        "strong_vs": ["special", "ranged"],
+        "weak_vs": ["heavy"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Rally",
+        "description": "Nearby allies gain +5% attack speed",
+        "radius": 80,
+        "effect": { "attackSpeed": 1.05 }
+      }
+    },
+    "javelin_thrower": {
+      "displayName": "Javelin Thrower",
+      "age": 2,
+      "type": "ranged",
+      "stats": {
+        "hp": 35,
+        "damage": 10,
+        "attackSpeed": 1.0,
+        "moveSpeed": 2.5,
+        "range": 140,
+        "armor": 0,
+        "cost": 45,
+        "spawnTime": 2.0,
+        "xpReward": 9,
+        "goldReward": 17
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Focus Fire",
+        "description": "2nd shot on same target deals +10% damage",
+        "radius": 0,
+        "effect": { "damage": 1.10 }
+      }
+    },
+    "war_chariot": {
+      "displayName": "War Chariot",
+      "age": 2,
+      "type": "heavy",
+      "stats": {
+        "hp": 160,
+        "damage": 25,
+        "attackSpeed": 0.8,
+        "moveSpeed": 3.0,
+        "range": 0,
+        "armor": 0,
+        "cost": 200,
+        "spawnTime": 5.0,
+        "xpReward": 17,
+        "goldReward": 46
+      },
+      "counters": {
+        "strong_vs": ["infantry"],
+        "weak_vs": ["ranged", "special"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Intimidate",
+        "description": "Enemies in range deal -10% damage",
+        "radius": 80,
+        "effect": { "damage": 0.90 }
+      }
+    },
+    "war_elephant": {
+      "displayName": "War Elephant",
+      "age": 2,
+      "type": "special",
+      "stats": {
+        "hp": 300,
+        "damage": 15,
+        "attackSpeed": 0.6,
+        "moveSpeed": 1.0,
+        "range": 0,
+        "armor": 0,
+        "cost": 350,
+        "spawnTime": 8.0,
+        "xpReward": 23,
+        "goldReward": 60
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Fear Aura",
+        "description": "Nearby enemy infantry deal -20% damage. Tramples infantry.",
+        "radius": 100,
+        "effect": { "damage": 0.80 }
+      }
+    },
+    "hoplite": {
+      "displayName": "Hoplite",
+      "age": 3,
+      "type": "infantry",
+      "stats": {
+        "hp": 70,
+        "damage": 15,
+        "attackSpeed": 1.0,
+        "moveSpeed": 2.5,
+        "range": 0,
+        "armor": 0,
+        "cost": 60,
+        "spawnTime": 1.5,
+        "xpReward": 6,
+        "goldReward": 14
+      },
+      "counters": {
+        "strong_vs": ["special", "ranged"],
+        "weak_vs": ["heavy"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Rally",
+        "description": "Nearby allies gain +5% attack speed",
+        "radius": 80,
+        "effect": { "attackSpeed": 1.05 }
+      }
+    },
+    "bowman": {
+      "displayName": "Bowman",
+      "age": 3,
+      "type": "ranged",
+      "stats": {
+        "hp": 45,
+        "damage": 14,
+        "attackSpeed": 1.0,
+        "moveSpeed": 2.3,
+        "range": 160,
+        "armor": 0,
+        "cost": 80,
+        "spawnTime": 2.0,
+        "xpReward": 9,
+        "goldReward": 19
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Focus Fire",
+        "description": "2nd shot on same target deals +10% damage",
+        "radius": 0,
+        "effect": { "damage": 1.10 }
+      }
+    },
+    "centurion": {
+      "displayName": "Centurion",
+      "age": 3,
+      "type": "heavy",
+      "stats": {
+        "hp": 200,
+        "damage": 30,
+        "attackSpeed": 0.8,
+        "moveSpeed": 2.0,
+        "range": 0,
+        "armor": 0,
+        "cost": 400,
+        "spawnTime": 6.0,
+        "xpReward": 19,
+        "goldReward": 51
+      },
+      "counters": {
+        "strong_vs": ["infantry"],
+        "weak_vs": ["ranged", "special"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Intimidate",
+        "description": "Enemies in range deal -10% damage",
+        "radius": 80,
+        "effect": { "damage": 0.90 }
+      }
+    },
+    "phalanx": {
+      "displayName": "Phalanx",
+      "age": 3,
+      "type": "special",
+      "stats": {
+        "hp": 90,
+        "damage": 12,
+        "attackSpeed": 1.0,
+        "moveSpeed": 1.5,
+        "range": 0,
+        "armor": 0,
+        "cost": 300,
+        "spawnTime": 5.0,
+        "xpReward": 26,
+        "goldReward": 70
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Shield Formation",
+        "description": "4 soldiers in formation, 50% ranged damage reduction. Vulnerable to flanking.",
+        "radius": 0,
+        "effect": { "spawnCount": 4, "rangedDamageReduction": 0.50 }
+      }
+    },
+    "swordsman": {
+      "displayName": "Swordsman",
+      "age": 4,
+      "type": "infantry",
+      "stats": {
+        "hp": 100,
+        "damage": 20,
+        "attackSpeed": 1.0,
+        "moveSpeed": 2.5,
+        "range": 0,
+        "armor": 0,
+        "cost": 100,
+        "spawnTime": 2.0,
+        "xpReward": 7,
+        "goldReward": 16
+      },
+      "counters": {
+        "strong_vs": ["special", "ranged"],
+        "weak_vs": ["heavy"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Rally",
+        "description": "Nearby allies gain +5% attack speed",
+        "radius": 80,
+        "effect": { "attackSpeed": 1.05 }
+      }
+    },
+    "crossbowman": {
+      "displayName": "Crossbowman",
+      "age": 4,
+      "type": "ranged",
+      "stats": {
+        "hp": 60,
+        "damage": 22,
+        "attackSpeed": 0.9,
+        "moveSpeed": 2.0,
+        "range": 180,
+        "armor": 0,
+        "cost": 140,
+        "spawnTime": 2.5,
+        "xpReward": 10,
+        "goldReward": 21
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Focus Fire",
+        "description": "2nd shot on same target deals +10% damage",
+        "radius": 0,
+        "effect": { "damage": 1.10 }
+      }
+    },
+    "knight": {
+      "displayName": "Knight",
+      "age": 4,
+      "type": "heavy",
+      "stats": {
+        "hp": 280,
+        "damage": 35,
+        "attackSpeed": 0.8,
+        "moveSpeed": 3.5,
+        "range": 0,
+        "armor": 0,
+        "cost": 600,
+        "spawnTime": 6.0,
+        "xpReward": 22,
+        "goldReward": 57
+      },
+      "counters": {
+        "strong_vs": ["infantry"],
+        "weak_vs": ["ranged", "special"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Intimidate",
+        "description": "Enemies in range deal -10% damage",
+        "radius": 80,
+        "effect": { "damage": 0.90 }
+      }
+    },
+    "trebuchet": {
+      "displayName": "Trebuchet",
+      "age": 4,
+      "type": "special",
+      "stats": {
+        "hp": 150,
+        "damage": 60,
+        "attackSpeed": 0.3,
+        "moveSpeed": 0.5,
+        "range": 300,
+        "armor": 0,
+        "cost": 500,
+        "spawnTime": 8.0,
+        "xpReward": 30,
+        "goldReward": 80
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Siege Engine",
+        "description": "Stationary siege unit. Devastating to turrets and base. Must stop to fire.",
+        "radius": 0,
+        "effect": { "turretDamageMultiplier": 2.0 }
+      }
+    },
+    "musketeer": {
+      "displayName": "Musketeer",
+      "age": 5,
+      "type": "infantry",
+      "stats": {
+        "hp": 80,
+        "damage": 28,
+        "attackSpeed": 0.8,
+        "moveSpeed": 2.5,
+        "range": 150,
+        "armor": 0,
+        "cost": 160,
+        "spawnTime": 2.0,
+        "xpReward": 8,
+        "goldReward": 18
+      },
+      "counters": {
+        "strong_vs": ["special", "ranged"],
+        "weak_vs": ["heavy"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Rally",
+        "description": "Nearby allies gain +5% attack speed",
+        "radius": 80,
+        "effect": { "attackSpeed": 1.05 }
+      }
+    },
+    "grenadier": {
+      "displayName": "Grenadier",
+      "age": 5,
+      "type": "ranged",
+      "stats": {
+        "hp": 70,
+        "damage": 35,
+        "attackSpeed": 0.7,
+        "moveSpeed": 2.0,
+        "range": 180,
+        "armor": 0,
+        "cost": 220,
+        "spawnTime": 3.0,
+        "xpReward": 10,
+        "goldReward": 23
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Focus Fire",
+        "description": "2nd shot on same target deals +10% damage",
+        "radius": 0,
+        "effect": { "damage": 1.10 }
+      }
+    },
+    "cavalry": {
+      "displayName": "Cavalry",
+      "age": 5,
+      "type": "heavy",
+      "stats": {
+        "hp": 200,
+        "damage": 40,
+        "attackSpeed": 0.9,
+        "moveSpeed": 4.0,
+        "range": 0,
+        "armor": 0,
+        "cost": 500,
+        "spawnTime": 5.0,
+        "xpReward": 24,
+        "goldReward": 63
+      },
+      "counters": {
+        "strong_vs": ["infantry"],
+        "weak_vs": ["ranged", "special"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Intimidate",
+        "description": "Enemies in range deal -10% damage",
+        "radius": 80,
+        "effect": { "damage": 0.90 }
+      }
+    },
+    "cannon": {
+      "displayName": "Cannon",
+      "age": 5,
+      "type": "special",
+      "stats": {
+        "hp": 250,
+        "damage": 80,
+        "attackSpeed": 0.25,
+        "moveSpeed": 0.5,
+        "range": 350,
+        "armor": 0,
+        "cost": 800,
+        "spawnTime": 10.0,
+        "xpReward": 33,
+        "goldReward": 90
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Splash Damage",
+        "description": "High splash damage, obliterates groups. Prioritizes turrets.",
+        "radius": 60,
+        "effect": { "splashRadius": 60, "turretPriority": 1 }
+      }
+    },
+    "rifleman": {
+      "displayName": "Rifleman",
+      "age": 6,
+      "type": "infantry",
+      "stats": {
+        "hp": 90,
+        "damage": 35,
+        "attackSpeed": 0.9,
+        "moveSpeed": 2.8,
+        "range": 180,
+        "armor": 0,
+        "cost": 250,
+        "spawnTime": 2.0,
+        "xpReward": 8,
+        "goldReward": 20
+      },
+      "counters": {
+        "strong_vs": ["special", "ranged"],
+        "weak_vs": ["heavy"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Rally",
+        "description": "Nearby allies gain +5% attack speed",
+        "radius": 80,
+        "effect": { "attackSpeed": 1.05 }
+      }
+    },
+    "machine_gunner": {
+      "displayName": "Machine Gunner",
+      "age": 6,
+      "type": "ranged",
+      "stats": {
+        "hp": 75,
+        "damage": 20,
+        "attackSpeed": 2.5,
+        "moveSpeed": 2.0,
+        "range": 200,
+        "armor": 0,
+        "cost": 350,
+        "spawnTime": 3.0,
+        "xpReward": 11,
+        "goldReward": 25
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Focus Fire",
+        "description": "2nd shot on same target deals +10% damage",
+        "radius": 0,
+        "effect": { "damage": 1.10 }
+      }
+    },
+    "steam_tank": {
+      "displayName": "Steam Tank",
+      "age": 6,
+      "type": "heavy",
+      "stats": {
+        "hp": 500,
+        "damage": 50,
+        "attackSpeed": 0.6,
+        "moveSpeed": 1.5,
+        "range": 150,
+        "armor": 0,
+        "cost": 1200,
+        "spawnTime": 8.0,
+        "xpReward": 26,
+        "goldReward": 69
+      },
+      "counters": {
+        "strong_vs": ["infantry"],
+        "weak_vs": ["ranged", "special"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Intimidate",
+        "description": "Enemies in range deal -10% damage",
+        "radius": 80,
+        "effect": { "damage": 0.90 }
+      }
+    },
+    "zeppelin_bomber": {
+      "displayName": "Zeppelin Bomber",
+      "age": 6,
+      "type": "special",
+      "stats": {
+        "hp": 300,
+        "damage": 70,
+        "attackSpeed": 0.4,
+        "moveSpeed": 2.0,
+        "range": 250,
+        "armor": 0,
+        "cost": 1500,
+        "spawnTime": 12.0,
+        "xpReward": 36,
+        "goldReward": 100
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Air Unit",
+        "description": "Cannot be hit by melee. Drops bombs with splash damage. Only ranged/turrets can target it.",
+        "radius": 50,
+        "effect": { "isAirUnit": 1, "splashRadius": 50 }
+      }
+    },
+    "marine": {
+      "displayName": "Marine",
+      "age": 7,
+      "type": "infantry",
+      "stats": {
+        "hp": 100,
+        "damage": 45,
+        "attackSpeed": 1.0,
+        "moveSpeed": 3.0,
+        "range": 200,
+        "armor": 0,
+        "cost": 400,
+        "spawnTime": 2.0,
+        "xpReward": 9,
+        "goldReward": 22
+      },
+      "counters": {
+        "strong_vs": ["special", "ranged"],
+        "weak_vs": ["heavy"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Rally",
+        "description": "Nearby allies gain +5% attack speed",
+        "radius": 80,
+        "effect": { "attackSpeed": 1.05 }
+      }
+    },
+    "sniper": {
+      "displayName": "Sniper",
+      "age": 7,
+      "type": "ranged",
+      "stats": {
+        "hp": 50,
+        "damage": 80,
+        "attackSpeed": 0.5,
+        "moveSpeed": 1.5,
+        "range": 400,
+        "armor": 0,
+        "cost": 600,
+        "spawnTime": 4.0,
+        "xpReward": 11,
+        "goldReward": 27
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Focus Fire",
+        "description": "2nd shot on same target deals +10% damage",
+        "radius": 0,
+        "effect": { "damage": 1.10 }
+      }
+    },
+    "tank": {
+      "displayName": "Tank",
+      "age": 7,
+      "type": "heavy",
+      "stats": {
+        "hp": 800,
+        "damage": 60,
+        "attackSpeed": 0.5,
+        "moveSpeed": 2.0,
+        "range": 250,
+        "armor": 0,
+        "cost": 2000,
+        "spawnTime": 10.0,
+        "xpReward": 28,
+        "goldReward": 74
+      },
+      "counters": {
+        "strong_vs": ["infantry"],
+        "weak_vs": ["ranged", "special"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Intimidate",
+        "description": "Enemies in range deal -10% damage",
+        "radius": 80,
+        "effect": { "damage": 0.90 }
+      }
+    },
+    "attack_helicopter": {
+      "displayName": "Attack Helicopter",
+      "age": 7,
+      "type": "special",
+      "stats": {
+        "hp": 400,
+        "damage": 55,
+        "attackSpeed": 0.7,
+        "moveSpeed": 4.0,
+        "range": 300,
+        "armor": 0,
+        "cost": 2500,
+        "spawnTime": 12.0,
+        "xpReward": 40,
+        "goldReward": 110
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Air Unit",
+        "description": "Air unit with anti-ground missiles. Fast, bypasses frontlines. Vulnerable to anti-air.",
+        "radius": 0,
+        "effect": { "isAirUnit": 1 }
+      }
+    },
+    "plasma_trooper": {
+      "displayName": "Plasma Trooper",
+      "age": 8,
+      "type": "infantry",
+      "stats": {
+        "hp": 120,
+        "damage": 55,
+        "attackSpeed": 1.0,
+        "moveSpeed": 3.0,
+        "range": 200,
+        "armor": 0,
+        "cost": 600,
+        "spawnTime": 2.0,
+        "xpReward": 10,
+        "goldReward": 25
+      },
+      "counters": {
+        "strong_vs": ["special", "ranged"],
+        "weak_vs": ["heavy"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Rally",
+        "description": "Nearby allies gain +5% attack speed",
+        "radius": 80,
+        "effect": { "attackSpeed": 1.05 }
+      }
+    },
+    "rail_gunner": {
+      "displayName": "Rail Gunner",
+      "age": 8,
+      "type": "ranged",
+      "stats": {
+        "hp": 80,
+        "damage": 120,
+        "attackSpeed": 0.4,
+        "moveSpeed": 2.0,
+        "range": 500,
+        "armor": 0,
+        "cost": 1000,
+        "spawnTime": 4.0,
+        "xpReward": 12,
+        "goldReward": 30
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Focus Fire",
+        "description": "2nd shot on same target deals +10% damage",
+        "radius": 0,
+        "effect": { "damage": 1.10 }
+      }
+    },
+    "mech_walker": {
+      "displayName": "Mech Walker",
+      "age": 8,
+      "type": "heavy",
+      "stats": {
+        "hp": 1200,
+        "damage": 80,
+        "attackSpeed": 0.5,
+        "moveSpeed": 1.5,
+        "range": 250,
+        "armor": 0,
+        "cost": 4000,
+        "spawnTime": 12.0,
+        "xpReward": 30,
+        "goldReward": 80
+      },
+      "counters": {
+        "strong_vs": ["infantry"],
+        "weak_vs": ["ranged", "special"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Intimidate",
+        "description": "Enemies in range deal -10% damage",
+        "radius": 80,
+        "effect": { "damage": 0.90 }
+      }
+    },
+    "drone_swarm": {
+      "displayName": "Drone Swarm",
+      "age": 8,
+      "type": "special",
+      "stats": {
+        "hp": 40,
+        "damage": 15,
+        "attackSpeed": 1.5,
+        "moveSpeed": 5.0,
+        "range": 150,
+        "armor": 0,
+        "cost": 3000,
+        "spawnTime": 8.0,
+        "xpReward": 40,
+        "goldReward": 120
+      },
+      "counters": {
+        "strong_vs": ["heavy"],
+        "weak_vs": ["infantry"],
+        "bonus_damage_multiplier": 1.5
+      },
+      "passive": {
+        "name": "Swarm Tactics",
+        "description": "8 small flying drones. Spread out to avoid splash. Self-destruct on death dealing AoE.",
+        "radius": 40,
+        "effect": { "spawnCount": 8, "isAirUnit": 1, "deathAoeDamage": 20 }
+      }
+    }
+  }
+}

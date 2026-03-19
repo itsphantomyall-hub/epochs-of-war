@@ -1,0 +1,68 @@
+{
+  "ages": {
+    "1": {
+      "name": "Prehistoric",
+      "xpToNext": 100,
+      "baseHpBonus": 0,
+      "passiveIncome": 3,
+      "units": ["clubman", "slinger", "dino_rider", "pack_raptors"],
+      "turrets": ["rock_dropper", "tar_pit"]
+    },
+    "2": {
+      "name": "Bronze Age",
+      "xpToNext": 250,
+      "baseHpBonus": 200,
+      "passiveIncome": 4,
+      "units": ["spearman", "javelin_thrower", "war_chariot", "war_elephant"],
+      "turrets": ["arrow_slit", "boiling_oil"]
+    },
+    "3": {
+      "name": "Classical",
+      "xpToNext": 500,
+      "baseHpBonus": 400,
+      "passiveIncome": 5,
+      "units": ["hoplite", "bowman", "centurion", "phalanx"],
+      "turrets": ["ballista", "catapult"]
+    },
+    "4": {
+      "name": "Medieval",
+      "xpToNext": 900,
+      "baseHpBonus": 600,
+      "passiveIncome": 6,
+      "units": ["swordsman", "crossbowman", "knight", "trebuchet"],
+      "turrets": ["repeating_crossbow", "trebuchet_tower"]
+    },
+    "5": {
+      "name": "Gunpowder",
+      "xpToNext": 1400,
+      "baseHpBonus": 800,
+      "passiveIncome": 7,
+      "units": ["musketeer", "grenadier", "cavalry", "cannon"],
+      "turrets": ["grape_shot_cannon", "long_cannon"]
+    },
+    "6": {
+      "name": "Industrial",
+      "xpToNext": 2200,
+      "baseHpBonus": 1000,
+      "passiveIncome": 8,
+      "units": ["rifleman", "machine_gunner", "steam_tank", "zeppelin_bomber"],
+      "turrets": ["gatling_tower", "howitzer"]
+    },
+    "7": {
+      "name": "Modern",
+      "xpToNext": 3500,
+      "baseHpBonus": 1200,
+      "passiveIncome": 9,
+      "units": ["marine", "sniper", "tank", "attack_helicopter"],
+      "turrets": ["sam_turret", "missile_launcher"]
+    },
+    "8": {
+      "name": "Future",
+      "xpToNext": 0,
+      "baseHpBonus": 1400,
+      "passiveIncome": 10,
+      "units": ["plasma_trooper", "rail_gunner", "mech_walker", "drone_swarm"],
+      "turrets": ["laser_grid", "ion_cannon"]
+    }
+  }
+}

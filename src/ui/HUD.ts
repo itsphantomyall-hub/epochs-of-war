@@ -1,0 +1,428 @@
+import Phaser from 'phaser';
+import { GameState, createInitialGameState } from '../types/GameState';
+
+/**
+ * Unit button data for the bottom bar.
+ */
+interface UnitButton {
+  bg: Phaser.GameObjects.Rectangle;
+  nameText: Phaser.GameObjects.Text;
+  costText: Phaser.GameObjects.Text;
+  keyText: Phaser.GameObjects.Text;
+  cooldownOverlay: Phaser.GameObjects.Rectangle;
+  index: number;
+}
+
+/**
+ * HUD Scene — rendered as an overlay on top of the GameScene.
+ *
+ * Layout (from GAME_DESIGN.md Section 13.1):
+ *   TOP BAR:    Gold | XP bar | Age name | Enemy base HP
+ *   BOTTOM BAR: 4 unit buttons (Q/W/E/R) | Evolve (T) | Special (SPACE) | Hero (1, 2)
+ */
+export class HUD extends Phaser.Scene {
+  // ── State (mirrors game state, updated each frame) ──
+  private gameState: GameState = createInitialGameState();
+
+  // ── Top bar elements ──
+  private goldText!: Phaser.GameObjects.Text;
+  private xpBarBg!: Phaser.GameObjects.Rectangle;
+  private xpBarFill!: Phaser.GameObjects.Rectangle;
+  private xpText!: Phaser.GameObjects.Text;
+  private ageText!: Phaser.GameObjects.Text;
+  private enemyHpBarBg!: Phaser.GameObjects.Rectangle;
+  private enemyHpBarFill!: Phaser.GameObjects.Rectangle;
+  private enemyHpText!: Phaser.GameObjects.Text;
+  private playerHpBarBg!: Phaser.GameObjects.Rectangle;
+  private playerHpBarFill!: Phaser.GameObjects.Rectangle;
+  private playerHpText!: Phaser.GameObjects.Text;
+
+  // ── Bottom bar elements ──
+  private unitButtons: UnitButton[] = [];
+  private evolveBtn!: Phaser.GameObjects.Rectangle;
+  private evolveBtnText!: Phaser.GameObjects.Text;
+  private evolveKeyText!: Phaser.GameObjects.Text;
+  private specialBtn!: Phaser.GameObjects.Rectangle;
+  private specialBtnText!: Phaser.GameObjects.Text;
+  private specialCooldownArc!: Phaser.GameObjects.Graphics;
+  private heroBtn1!: Phaser.GameObjects.Rectangle;
+  private heroBtn1Text!: Phaser.GameObjects.Text;
+  private heroBtn2!: Phaser.GameObjects.Rectangle;
+  private heroBtn2Text!: Phaser.GameObjects.Text;
+
+  // ── Bottom bar background ──
+  private bottomBarBg!: Phaser.GameObjects.Rectangle;
+  private topBarBg!: Phaser.GameObjects.Rectangle;
+
+  // ── Config ──
+  private static readonly TOP_BAR_HEIGHT = 36;
+  private static readonly BOTTOM_BAR_HEIGHT = 72;
+  private static readonly BUTTON_W = 100;
+  private static readonly BUTTON_H = 56;
+  private static readonly BUTTON_GAP = 8;
+
+  // ── Placeholder unit data (will come from config JSONs later) ──
+  private unitDefs = [
+    { name: 'Infantry', cost: 15, key: 'Q' },
+    { name: 'Ranged', cost: 25, key: 'W' },
+    { name: 'Heavy', cost: 100, key: 'E' },
+    { name: 'Special', cost: 80, key: 'R' },
+  ];
+
+  // ── Cooldown timers (0 = ready, >0 = seconds remaining) ──
+  private unitCooldowns = [0, 0, 0, 0];
+  private specialCooldown = 0;
+  private specialMaxCooldown = 30;
+  private heroCooldowns = [0, 0];
+
+  // ── Age names ──
+  private static readonly AGE_NAMES: Record<number, string> = {
+    1: 'Prehistoric',
+    2: 'Bronze Age',
+    3: 'Classical',
+    4: 'Medieval',
+    5: 'Gunpowder',
+    6: 'Industrial',
+    7: 'Modern',
+    8: 'Future',
+  };
+
+  // ── Evolve pulse state ──
+  private evolveReady = false;
+  private evolvePulseTimer = 0;
+
+  constructor() {
+    super({ key: 'HUD' });
+  }
+
+  create(): void {
+    const { width, height } = this.scale;
+
+    this.createTopBar(width);
+    this.createBottomBar(width, height);
+  }
+
+  // ─────────────────────── TOP BAR ───────────────────────
+
+  private createTopBar(width: number): void {
+    const h = HUD.TOP_BAR_HEIGHT;
+
+    // Background
+    this.topBarBg = this.add.rectangle(width / 2, h / 2, width, h, 0x000000, 0.65);
+    this.topBarBg.setDepth(0);
+
+    // ── Player base HP (top-left) ──
+    const hpX = 12;
+    const hpY = h / 2;
+    this.playerHpBarBg = this.add.rectangle(hpX + 50, hpY, 100, 14, 0x333333).setOrigin(0.5);
+    this.playerHpBarFill = this.add.rectangle(hpX + 50, hpY, 100, 14, 0x44cc44).setOrigin(0.5);
+    this.playerHpText = this.add.text(hpX + 50, hpY, '500/500', {
+      fontSize: '10px', fontFamily: 'monospace', color: '#ffffff',
+    }).setOrigin(0.5).setDepth(2);
+
+    // ── Gold display ──
+    this.goldText = this.add.text(130, hpY, 'Gold: 50', {
+      fontSize: '14px', fontFamily: 'monospace', color: '#ffd700',
+    }).setOrigin(0, 0.5).setDepth(2);
+
+    // ── XP bar (center-left) ──
+    const xpX = 280;
+    this.xpBarBg = this.add.rectangle(xpX + 75, hpY, 150, 14, 0x333333).setOrigin(0.5);
+    this.xpBarFill = this.add.rectangle(xpX + 75, hpY, 0, 14, 0x8844ff).setOrigin(0.5);
+    this.xpText = this.add.text(xpX + 75, hpY, '0/500', {
+      fontSize: '10px', fontFamily: 'monospace', color: '#ffffff',
+    }).setOrigin(0.5).setDepth(2);
+
+    // ── Age name (center) ──
+    this.ageText = this.add.text(width / 2, hpY, 'Prehistoric', {
+      fontSize: '16px', fontFamily: 'monospace', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(2);
+
+    // ── Enemy base HP bar (right) ──
+    const eHpX = width - 112;
+    this.enemyHpBarBg = this.add.rectangle(eHpX, hpY, 100, 14, 0x333333).setOrigin(0.5);
+    this.enemyHpBarFill = this.add.rectangle(eHpX, hpY, 100, 14, 0xcc4444).setOrigin(0.5);
+    this.enemyHpText = this.add.text(eHpX, hpY, '500/500', {
+      fontSize: '10px', fontFamily: 'monospace', color: '#ffffff',
+    }).setOrigin(0.5).setDepth(2);
+  }
+
+  // ─────────────────────── BOTTOM BAR ───────────────────────
+
+  private createBottomBar(width: number, height: number): void {
+    const barH = HUD.BOTTOM_BAR_HEIGHT;
+    const barY = height - barH / 2;
+
+    // Background
+    this.bottomBarBg = this.add.rectangle(width / 2, barY, width, barH, 0x000000, 0.7);
+    this.bottomBarBg.setDepth(0);
+
+    // ── 4 Unit spawn buttons ──
+    const btnW = HUD.BUTTON_W;
+    const btnH = HUD.BUTTON_H;
+    const gap = HUD.BUTTON_GAP;
+    const startX = 20;
+
+    for (let i = 0; i < 4; i++) {
+      const x = startX + i * (btnW + gap) + btnW / 2;
+      const y = barY;
+      const def = this.unitDefs[i];
+
+      const bg = this.add.rectangle(x, y, btnW, btnH, 0x224466, 1)
+        .setStrokeStyle(2, 0x4488cc)
+        .setDepth(1);
+
+      const nameText = this.add.text(x, y - 14, def.name, {
+        fontSize: '11px', fontFamily: 'monospace', color: '#ffffff',
+      }).setOrigin(0.5).setDepth(2);
+
+      const costText = this.add.text(x, y + 2, `$${def.cost}`, {
+        fontSize: '11px', fontFamily: 'monospace', color: '#ffd700',
+      }).setOrigin(0.5).setDepth(2);
+
+      const keyText = this.add.text(x, y + 18, `[${def.key}]`, {
+        fontSize: '10px', fontFamily: 'monospace', color: '#aaaaaa',
+      }).setOrigin(0.5).setDepth(2);
+
+      // Cooldown overlay (invisible by default)
+      const cooldownOverlay = this.add.rectangle(x, y + btnH / 2, btnW, 0, 0x000000, 0.6)
+        .setOrigin(0.5, 1)
+        .setDepth(3);
+
+      this.unitButtons.push({ bg, nameText, costText, keyText, cooldownOverlay, index: i });
+    }
+
+    // ── EVOLVE button ──
+    const evolveX = startX + 4 * (btnW + gap) + 60;
+    this.evolveBtn = this.add.rectangle(evolveX, barY, 80, btnH, 0x226622, 1)
+      .setStrokeStyle(2, 0x44cc44)
+      .setDepth(1);
+    this.evolveBtnText = this.add.text(evolveX, barY - 6, 'EVOLVE', {
+      fontSize: '12px', fontFamily: 'monospace', color: '#44ff44', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(2);
+    this.evolveKeyText = this.add.text(evolveX, barY + 14, '[T]', {
+      fontSize: '10px', fontFamily: 'monospace', color: '#aaaaaa',
+    }).setOrigin(0.5).setDepth(2);
+
+    // ── SPECIAL button ──
+    const specialX = evolveX + 100;
+    this.specialBtn = this.add.rectangle(specialX, barY, 80, btnH, 0x662222, 1)
+      .setStrokeStyle(2, 0xcc4444)
+      .setDepth(1);
+    this.specialBtnText = this.add.text(specialX, barY - 6, 'READY', {
+      fontSize: '12px', fontFamily: 'monospace', color: '#ff4444', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(2);
+    this.add.text(specialX, barY + 14, '[SPACE]', {
+      fontSize: '9px', fontFamily: 'monospace', color: '#aaaaaa',
+    }).setOrigin(0.5).setDepth(2);
+
+    // Cooldown pie chart graphics
+    this.specialCooldownArc = this.add.graphics().setDepth(4);
+
+    // ── HERO ability buttons ──
+    const heroX = specialX + 100;
+    this.heroBtn1 = this.add.rectangle(heroX, barY, 44, btnH, 0x444422, 1)
+      .setStrokeStyle(2, 0x888844)
+      .setDepth(1);
+    this.heroBtn1Text = this.add.text(heroX, barY, '[1]', {
+      fontSize: '12px', fontFamily: 'monospace', color: '#cccc44',
+    }).setOrigin(0.5).setDepth(2);
+
+    this.heroBtn2 = this.add.rectangle(heroX + 52, barY, 44, btnH, 0x444422, 1)
+      .setStrokeStyle(2, 0x888844)
+      .setDepth(1);
+    this.heroBtn2Text = this.add.text(heroX + 52, barY, '[2]', {
+      fontSize: '12px', fontFamily: 'monospace', color: '#cccc44',
+    }).setOrigin(0.5).setDepth(2);
+  }
+
+  // ─────────────────────── UPDATE ───────────────────────
+
+  update(_time: number, delta: number): void {
+    // Try to read game state from the GameScene's registry
+    const gameScene = this.scene.get('GameScene');
+    if (gameScene && gameScene.data) {
+      const state = gameScene.data.get('gameState') as GameState | undefined;
+      if (state) {
+        this.gameState = state;
+      }
+    }
+
+    this.updateTopBar();
+    this.updateUnitButtons(delta);
+    this.updateEvolveButton(delta);
+    this.updateSpecialButton(delta);
+    this.updateHeroButtons(delta);
+  }
+
+  private updateTopBar(): void {
+    const { player, enemy } = this.gameState;
+
+    // Gold
+    this.goldText.setText(`Gold: ${Math.floor(player.gold).toLocaleString()}`);
+
+    // Player base HP
+    const playerHpRatio = Math.max(0, player.baseHp / player.baseMaxHp);
+    this.playerHpBarFill.scaleX = playerHpRatio;
+    this.playerHpText.setText(`${Math.ceil(player.baseHp)}/${player.baseMaxHp}`);
+
+    // XP bar
+    const xpToNext = this.getXpToNext(player.currentAge);
+    const xpRatio = xpToNext > 0 ? Math.min(player.xp / xpToNext, 1) : 1;
+    this.xpBarFill.scaleX = xpRatio;
+    this.xpText.setText(`${Math.floor(player.xp)}/${xpToNext}`);
+
+    // Age name
+    const ageName = HUD.AGE_NAMES[player.currentAge] ?? `Age ${player.currentAge}`;
+    this.ageText.setText(ageName);
+
+    // Evolve readiness
+    this.evolveReady = player.xp >= xpToNext && player.currentAge < 8;
+
+    // Enemy base HP
+    const enemyHpRatio = Math.max(0, enemy.baseHp / enemy.baseMaxHp);
+    this.enemyHpBarFill.scaleX = enemyHpRatio;
+    this.enemyHpText.setText(`${Math.ceil(enemy.baseHp)}/${enemy.baseMaxHp}`);
+  }
+
+  private updateUnitButtons(delta: number): void {
+    const { player } = this.gameState;
+
+    for (const btn of this.unitButtons) {
+      const def = this.unitDefs[btn.index];
+      const canAfford = player.gold >= def.cost;
+      const onCooldown = this.unitCooldowns[btn.index] > 0;
+
+      // Grey out when can't afford
+      const bgColor = canAfford ? 0x224466 : 0x222222;
+      btn.bg.setFillStyle(bgColor);
+      btn.costText.setColor(canAfford ? '#ffd700' : '#666666');
+      btn.nameText.setColor(canAfford ? '#ffffff' : '#666666');
+
+      // Cooldown fill overlay
+      if (onCooldown) {
+        this.unitCooldowns[btn.index] = Math.max(0, this.unitCooldowns[btn.index] - delta / 1000);
+        // Show cooldown as a fill from bottom
+        const maxCooldown = 2; // placeholder max
+        const ratio = this.unitCooldowns[btn.index] / maxCooldown;
+        btn.cooldownOverlay.setSize(HUD.BUTTON_W, HUD.BUTTON_H * ratio);
+        btn.cooldownOverlay.setVisible(true);
+      } else {
+        btn.cooldownOverlay.setVisible(false);
+      }
+    }
+  }
+
+  private updateEvolveButton(_delta: number): void {
+    if (this.evolveReady) {
+      // Pulse glow effect
+      this.evolvePulseTimer += _delta / 1000;
+      const alpha = 0.7 + 0.3 * Math.sin(this.evolvePulseTimer * 4);
+      this.evolveBtn.setFillStyle(0x22aa22);
+      this.evolveBtn.setAlpha(alpha);
+      this.evolveBtnText.setColor('#44ff44');
+      this.evolveKeyText.setText('READY [T]');
+    } else {
+      this.evolveBtn.setFillStyle(0x222222);
+      this.evolveBtn.setAlpha(1);
+      this.evolveBtnText.setColor('#666666');
+      this.evolveKeyText.setText('[T]');
+    }
+  }
+
+  private updateSpecialButton(delta: number): void {
+    if (this.specialCooldown > 0) {
+      this.specialCooldown = Math.max(0, this.specialCooldown - delta / 1000);
+      this.specialBtnText.setText(Math.ceil(this.specialCooldown) + 's');
+      this.specialBtn.setFillStyle(0x331111);
+
+      // Draw cooldown pie chart
+      this.drawCooldownPie(
+        this.specialBtn.x,
+        this.specialBtn.y,
+        20,
+        this.specialCooldown / this.specialMaxCooldown
+      );
+    } else {
+      this.specialBtnText.setText('READY');
+      this.specialBtn.setFillStyle(0x662222);
+      this.specialCooldownArc.clear();
+    }
+  }
+
+  private updateHeroButtons(delta: number): void {
+    // Hero ability 1
+    if (this.heroCooldowns[0] > 0) {
+      this.heroCooldowns[0] = Math.max(0, this.heroCooldowns[0] - delta / 1000);
+      this.heroBtn1.setFillStyle(0x222211);
+      this.heroBtn1Text.setText(Math.ceil(this.heroCooldowns[0]) + 's');
+    } else {
+      this.heroBtn1.setFillStyle(0x444422);
+      this.heroBtn1Text.setText('[1]');
+    }
+
+    // Hero ability 2
+    if (this.heroCooldowns[1] > 0) {
+      this.heroCooldowns[1] = Math.max(0, this.heroCooldowns[1] - delta / 1000);
+      this.heroBtn2.setFillStyle(0x222211);
+      this.heroBtn2Text.setText(Math.ceil(this.heroCooldowns[1]) + 's');
+    } else {
+      this.heroBtn2.setFillStyle(0x444422);
+      this.heroBtn2Text.setText('[2]');
+    }
+  }
+
+  private drawCooldownPie(cx: number, cy: number, radius: number, ratio: number): void {
+    this.specialCooldownArc.clear();
+    if (ratio <= 0) return;
+
+    this.specialCooldownArc.fillStyle(0x000000, 0.6);
+    this.specialCooldownArc.beginPath();
+    this.specialCooldownArc.moveTo(cx, cy);
+
+    const startAngle = -Math.PI / 2;
+    const endAngle = startAngle + Math.PI * 2 * ratio;
+    this.specialCooldownArc.arc(cx, cy, radius, startAngle, endAngle, false);
+    this.specialCooldownArc.closePath();
+    this.specialCooldownArc.fillPath();
+  }
+
+  // ─────────────────────── PUBLIC API ───────────────────────
+
+  /** Called by GameScene when a unit spawn is triggered. Starts cooldown. */
+  startUnitCooldown(index: number, duration: number): void {
+    if (index >= 0 && index < 4) {
+      this.unitCooldowns[index] = duration;
+    }
+  }
+
+  /** Called by GameScene when special is used. */
+  startSpecialCooldown(duration: number): void {
+    this.specialCooldown = duration;
+    this.specialMaxCooldown = duration;
+  }
+
+  /** Called by GameScene when a hero ability is used. */
+  startHeroCooldown(abilityIndex: number, duration: number): void {
+    if (abilityIndex >= 0 && abilityIndex < 2) {
+      this.heroCooldowns[abilityIndex] = duration;
+    }
+  }
+
+  // ─────────────────────── HELPERS ───────────────────────
+
+  private getXpToNext(currentAge: number): number {
+    // Placeholder XP thresholds per age (will come from age config JSON)
+    const thresholds: Record<number, number> = {
+      1: 200,
+      2: 400,
+      3: 700,
+      4: 1200,
+      5: 2000,
+      6: 3500,
+      7: 6000,
+      8: 0, // max age
+    };
+    return thresholds[currentAge] ?? 500;
+  }
+}
