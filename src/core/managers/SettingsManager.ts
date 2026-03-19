@@ -37,7 +37,7 @@ const DEFAULT_SETTINGS: GameSettings = {
 let instance: SettingsManager | null = null;
 
 export class SettingsManager {
-  private settings: GameSettings;
+  private settings: GameSettings = { ...DEFAULT_SETTINGS };
 
   constructor() {
     if (instance) return instance;
