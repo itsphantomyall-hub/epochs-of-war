@@ -493,6 +493,9 @@ export class GameScene extends Phaser.Scene {
     this.juice.onSpawnComboParticles = (x, y) => {
       this.particles.spawnMagicBurst(x, y, 0xFFD700);
     };
+    this.juice.onSpawnBaseDebris = (x, y) => {
+      this.particles.spawnBaseDebris(x, y);
+    };
 
     // Show initial background
     this.backgroundRenderer.showAge(1);
@@ -1054,7 +1057,7 @@ export class GameScene extends Phaser.Scene {
   // ─────────────────────── SCREEN EFFECTS ───────────────────────
 
   private playEvolutionTransition(ageName: string): void {
-    // Delegate to JuiceManager for the full 3-second cinematic sequence
+    // Delegate to JuiceManager for the full 4-second cinematic sequence
     const baseY = GameScene.GROUND_Y - 40;
     this.juice.playEvolutionCinematic(ageName, GameScene.PLAYER_BASE_X, baseY);
 

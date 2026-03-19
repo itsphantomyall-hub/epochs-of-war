@@ -37,8 +37,16 @@ export class JuiceManager {
   private evolutionBaseX: number = 0;
   private evolutionBaseY: number = 0;
   private evolutionText: Phaser.GameObjects.Text | null = null;
+  private evolutionTextShadow: Phaser.GameObjects.Text | null = null;
   private evolutionFlashGraphics: Phaser.GameObjects.Graphics | null = null;
+  private evolutionDimOverlay: Phaser.GameObjects.Rectangle | null = null;
   private evolutionGoldSpawnTimer: number = 0;
+  private evolutionDebrisSpawned: boolean = false;
+  private evolutionCelebrationSpawned: boolean = false;
+  private evolutionZoomInStarted: boolean = false;
+  private evolutionZoomOutStarted: boolean = false;
+  private evolutionTextFadeStarted: boolean = false;
+  private evolutionDimFadeStarted: boolean = false;
 
   // ── Low HP Warning ──
   private lowHpOverlay: Phaser.GameObjects.Graphics | null = null;
@@ -50,6 +58,7 @@ export class JuiceManager {
   public onSpawnGoldParticles: ((x: number, y: number) => void) | null = null;
   public onSpawnCelebrationParticles: ((x: number, y: number) => void) | null = null;
   public onSpawnComboParticles: ((x: number, y: number) => void) | null = null;
+  public onSpawnBaseDebris: ((x: number, y: number) => void) | null = null;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -222,7 +231,7 @@ export class JuiceManager {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  //  EVOLUTION CINEMATIC (3 seconds)
+  //  EVOLUTION CINEMATIC (4 seconds — the most spectacular moment)
   // ═══════════════════════════════════════════════════════════════════
 
   /**
@@ -240,10 +249,21 @@ export class JuiceManager {
     this.evolutionBaseX = baseX;
     this.evolutionBaseY = baseY;
     this.evolutionGoldSpawnTimer = 0;
+    this.evolutionDebrisSpawned = false;
+    this.evolutionCelebrationSpawned = false;
+    this.evolutionZoomInStarted = false;
+    this.evolutionZoomOutStarted = false;
+    this.evolutionTextFadeStarted = false;
+    this.evolutionDimFadeStarted = false;
 
-    // Create flash overlay
+    // Create flash overlay (white)
     this.evolutionFlashGraphics = this.scene.add.graphics().setDepth(9500);
     this.evolutionFlashGraphics.setAlpha(0);
+
+    // Create dim overlay (semi-transparent black)
+    this.evolutionDimOverlay = this.scene.add.rectangle(640, 360, 1280, 720, 0x000000, 0)
+      .setDepth(9499)
+      .setOrigin(0.5);
   }
 
   /**
@@ -256,102 +276,153 @@ export class JuiceManager {
     this.evolutionTimer += delta;
     const t = this.evolutionTimer;
 
-    // 0.0s: evolutionPlaying = true, pause game (handled by caller)
+    // ── 0.0s: evolutionPlaying = true, pause game (handled by caller)
 
-    // 0.3s-0.8s: Spawn gold particles at base (5 per 100ms)
-    if (t >= 0.3 && t < 0.8) {
+    // ── 0.2s: Screen dims slightly (alpha 0→0.3 over 300ms)
+    if (this.evolutionDimOverlay && t >= 0.2 && t < 0.5) {
+      const dimProgress = Math.min((t - 0.2) / 0.3, 1);
+      this.evolutionDimOverlay.setAlpha(dimProgress * 0.3);
+    }
+
+    // ── 0.5s: Old base crumbling — spawn debris particles
+    if (t >= 0.5 && !this.evolutionDebrisSpawned) {
+      this.evolutionDebrisSpawned = true;
+      this.onSpawnBaseDebris?.(this.evolutionBaseX, this.evolutionBaseY);
+    }
+
+    // ── 0.5s-1.0s: Spawn gold particles at base (building energy)
+    if (t >= 0.5 && t < 1.0) {
       this.evolutionGoldSpawnTimer += delta;
-      if (this.evolutionGoldSpawnTimer >= 0.1) {
-        this.evolutionGoldSpawnTimer -= 0.1;
+      if (this.evolutionGoldSpawnTimer >= 0.08) {
+        this.evolutionGoldSpawnTimer -= 0.08;
         this.onSpawnGoldParticles?.(this.evolutionBaseX, this.evolutionBaseY);
       }
     }
 
-    // 0.5s: Camera flash white (alpha 0→0.8→0 over 300ms)
+    // ── 1.0s: Camera flash WHITE (alpha 0→0.9→0 over 400ms) — THE dramatic moment
     if (this.evolutionFlashGraphics) {
-      if (t >= 0.5 && t < 0.8) {
-        const flashProgress = (t - 0.5) / 0.3;
-        // 0→0.8 in first half, 0.8→0 in second half
-        const flashAlpha = flashProgress < 0.5
-          ? flashProgress * 2 * 0.8
-          : (1 - flashProgress) * 2 * 0.8;
+      if (t >= 1.0 && t < 1.4) {
+        const flashProgress = (t - 1.0) / 0.4;
+        // 0→0.9 in first 40%, 0.9→0 in remaining 60%
+        let flashAlpha: number;
+        if (flashProgress < 0.4) {
+          flashAlpha = (flashProgress / 0.4) * 0.9;
+        } else {
+          flashAlpha = ((1 - flashProgress) / 0.6) * 0.9;
+        }
         this.evolutionFlashGraphics.clear();
         this.evolutionFlashGraphics.fillStyle(0xffffff, flashAlpha);
         this.evolutionFlashGraphics.fillRect(0, 0, 1280, 720);
-      } else if (t >= 0.8 && this.evolutionFlashGraphics.alpha > 0) {
+      } else if (t >= 1.4) {
         this.evolutionFlashGraphics.clear();
-        this.evolutionFlashGraphics.setAlpha(0);
       }
     }
 
-    // 0.8s: Celebration particles
-    if (t >= 0.8 && t < 0.85) {
-      // Only trigger once (within 50ms window)
-      if (this.evolutionTimer - delta < 0.8) {
-        this.onSpawnCelebrationParticles?.(this.evolutionBaseX, this.evolutionBaseY);
-      }
+    // ── 1.2s: Particle explosion — 20+ gold/white particles radiating outward
+    if (t >= 1.2 && !this.evolutionCelebrationSpawned) {
+      this.evolutionCelebrationSpawned = true;
+      this.onSpawnCelebrationParticles?.(this.evolutionBaseX, this.evolutionBaseY);
+      // Spawn a second burst for extra spectacle
+      this.onSpawnGoldParticles?.(this.evolutionBaseX, this.evolutionBaseY);
+      this.onSpawnGoldParticles?.(this.evolutionBaseX, this.evolutionBaseY);
     }
 
-    // 1.0s: Camera zoom toward base (1.0x → 1.2x over 500ms)
-    if (t >= 1.0 && t < 1.05) {
-      if (this.evolutionTimer - delta < 1.0) {
-        this.scene.tweens.add({
-          targets: this.scene.cameras.main,
-          zoom: 1.2,
-          duration: 500,
-          ease: 'Sine.easeInOut',
-        });
-      }
-    }
-
-    // 1.5s: Display age name text
-    if (t >= 1.5 && !this.evolutionText) {
-      this.evolutionText = this.scene.add.text(640, 300, this.evolutionAgeName, {
-        fontSize: '48px',
-        fontFamily: 'monospace',
-        color: '#DAA520',
-        fontStyle: 'bold',
-        stroke: '#000000',
-        strokeThickness: 6,
-      }).setOrigin(0.5).setDepth(9600).setAlpha(0).setScale(0);
-
-      // Scale from 0 to 1.0 with bounce easing (200ms)
+    // ── 1.5s: Camera zoom to base (1.0→1.3x over 500ms)
+    if (t >= 1.5 && !this.evolutionZoomInStarted) {
+      this.evolutionZoomInStarted = true;
       this.scene.tweens.add({
-        targets: this.evolutionText,
-        alpha: 1,
-        scaleX: 1,
-        scaleY: 1,
-        duration: 200,
-        ease: 'Back.easeOut',
+        targets: this.scene.cameras.main,
+        zoom: 1.3,
+        duration: 500,
+        ease: 'Sine.easeInOut',
       });
     }
 
-    // 2.0s: Camera zoom back (1.2x → 1.0x over 500ms)
-    if (t >= 2.0 && t < 2.05) {
-      if (this.evolutionTimer - delta < 2.0) {
-        this.scene.tweens.add({
-          targets: this.scene.cameras.main,
-          zoom: 1.0,
-          duration: 500,
-          ease: 'Sine.easeInOut',
-        });
-      }
+    // ── 1.8s: Age name text appears CENTER SCREEN in HUGE font
+    if (t >= 1.8 && !this.evolutionText) {
+      // Drop shadow text (rendered behind main text)
+      this.evolutionTextShadow = this.scene.add.text(643, 363, this.evolutionAgeName, {
+        fontSize: '64px',
+        fontFamily: "'Impact', 'Arial Black', sans-serif",
+        color: '#000000',
+      }).setOrigin(0.5).setDepth(9599).setAlpha(0).setScale(0);
+
+      // Main age name text
+      this.evolutionText = this.scene.add.text(640, 360, this.evolutionAgeName, {
+        fontSize: '64px',
+        fontFamily: "'Impact', 'Arial Black', sans-serif",
+        color: '#FFD700',
+        stroke: '#8B6914',
+        strokeThickness: 4,
+      }).setOrigin(0.5).setDepth(9600).setAlpha(0).setScale(0);
+
+      // Spring animation: scale 0 → 1.2 → 1.0 via Back.easeOut
+      this.scene.tweens.add({
+        targets: [this.evolutionText, this.evolutionTextShadow],
+        alpha: 1,
+        scaleX: 1.0,
+        scaleY: 1.0,
+        duration: 400,
+        ease: 'Back.easeOut',
+      });
+
+      // Shadow stays at lower alpha for depth
+      this.scene.tweens.add({
+        targets: this.evolutionTextShadow,
+        alpha: 0.4,
+        duration: 400,
+        ease: 'Sine.easeOut',
+      });
     }
 
-    // 2.5s: Age name text starts fading (alpha 1→0 over 500ms)
-    if (t >= 2.5 && t < 2.55) {
-      if (this.evolutionTimer - delta < 2.5 && this.evolutionText) {
+    // ── 2.5s: Camera zoom back (1.3→1.0x over 500ms)
+    if (t >= 2.5 && !this.evolutionZoomOutStarted) {
+      this.evolutionZoomOutStarted = true;
+      this.scene.tweens.add({
+        targets: this.scene.cameras.main,
+        zoom: 1.0,
+        duration: 500,
+        ease: 'Sine.easeInOut',
+      });
+    }
+
+    // ── 3.0s: Text starts fading (alpha 1→0 over 800ms) + dim overlay fades
+    if (t >= 3.0 && !this.evolutionTextFadeStarted) {
+      this.evolutionTextFadeStarted = true;
+
+      if (this.evolutionText) {
         this.scene.tweens.add({
           targets: this.evolutionText,
           alpha: 0,
-          duration: 500,
+          duration: 800,
+          ease: 'Sine.easeIn',
+        });
+      }
+      if (this.evolutionTextShadow) {
+        this.scene.tweens.add({
+          targets: this.evolutionTextShadow,
+          alpha: 0,
+          duration: 800,
           ease: 'Sine.easeIn',
         });
       }
     }
 
-    // 3.0s: Done — clean up and resume
-    if (t >= 3.0) {
+    // ── 3.0s: Dim overlay starts fading out
+    if (t >= 3.0 && !this.evolutionDimFadeStarted) {
+      this.evolutionDimFadeStarted = true;
+      if (this.evolutionDimOverlay) {
+        this.scene.tweens.add({
+          targets: this.evolutionDimOverlay,
+          alpha: 0,
+          duration: 500,
+          ease: 'Sine.easeOut',
+        });
+      }
+    }
+
+    // ── 4.0s: Done — clean up everything and resume
+    if (t >= 4.0) {
       this._evolutionPlaying = false;
       this.evolutionTimer = 0;
 
@@ -359,9 +430,17 @@ export class JuiceManager {
         this.evolutionText.destroy();
         this.evolutionText = null;
       }
+      if (this.evolutionTextShadow) {
+        this.evolutionTextShadow.destroy();
+        this.evolutionTextShadow = null;
+      }
       if (this.evolutionFlashGraphics) {
         this.evolutionFlashGraphics.destroy();
         this.evolutionFlashGraphics = null;
+      }
+      if (this.evolutionDimOverlay) {
+        this.evolutionDimOverlay.destroy();
+        this.evolutionDimOverlay = null;
       }
 
       // Ensure camera zoom is back to 1.0
@@ -508,7 +587,9 @@ export class JuiceManager {
   destroy(): void {
     if (this.comboText) { this.comboText.destroy(); this.comboText = null; }
     if (this.evolutionText) { this.evolutionText.destroy(); this.evolutionText = null; }
+    if (this.evolutionTextShadow) { this.evolutionTextShadow.destroy(); this.evolutionTextShadow = null; }
     if (this.evolutionFlashGraphics) { this.evolutionFlashGraphics.destroy(); this.evolutionFlashGraphics = null; }
+    if (this.evolutionDimOverlay) { this.evolutionDimOverlay.destroy(); this.evolutionDimOverlay = null; }
     if (this.lowHpOverlay) { this.lowHpOverlay.destroy(); this.lowHpOverlay = null; }
     if (this.lowHpText) { this.lowHpText.destroy(); this.lowHpText = null; }
   }

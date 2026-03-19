@@ -42,119 +42,219 @@ export class MainMenuScene extends Phaser.Scene {
     // Background
     this.cameras.main.setBackgroundColor('#0a0a1a');
 
-    // ── Title ──
+    // ── Animated battlefield background ──
+    const gfx = this.add.graphics().setDepth(-10);
+    gfx.fillStyle(0x1a1a3a, 1); // dark sky
+    gfx.fillRect(0, 0, 1280, 500);
+    gfx.fillStyle(0x334422, 1); // ground
+    gfx.fillRect(0, 500, 1280, 220);
+    gfx.fillStyle(0x445533, 1); // grass line
+    gfx.fillRect(0, 498, 1280, 4);
+
+    // Spawn decorative "battle" units that walk across in the background
+    this.time.addEvent({
+      delay: 2000,
+      loop: true,
+      callback: () => {
+        // Blue unit walks right
+        const blue = this.add.rectangle(50, 480, 8, 14, 0x4488ff).setDepth(-5);
+        this.tweens.add({ targets: blue, x: 1300, duration: 12000, onComplete: () => blue.destroy() });
+        // Red unit walks left
+        const red = this.add.rectangle(1230, 485, 8, 14, 0xff4444).setDepth(-5);
+        this.tweens.add({ targets: red, x: -20, duration: 12000, onComplete: () => red.destroy() });
+      },
+    });
+
+    // Floating embers/particles in the background
+    this.time.addEvent({
+      delay: 300,
+      loop: true,
+      callback: () => {
+        const x = Math.random() * 1280;
+        const ember = this.add.circle(x, 520, 1, 0xff8844, 0.6).setDepth(-4);
+        this.tweens.add({
+          targets: ember,
+          y: 300 + Math.random() * 100,
+          alpha: 0,
+          duration: 3000 + Math.random() * 2000,
+          onComplete: () => ember.destroy(),
+        });
+      },
+    });
+
+    // ── Title with shadow for depth ──
+    this.add.text(cx + 3, 83, 'EPOCHS OF WAR', {
+      fontSize: '58px',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
+      color: '#000000',
+    }).setOrigin(0.5).setAlpha(0.4); // Shadow
+
     this.add.text(cx, 80, 'EPOCHS OF WAR', {
-      fontSize: '56px',
-      fontFamily: 'monospace',
-      color: '#ffffff',
+      fontSize: '58px',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
+      color: '#FFD700',
       fontStyle: 'bold',
+      stroke: '#8B6914',
+      strokeThickness: 3,
     }).setOrigin(0.5);
 
-    // Subtitle
-    this.add.text(cx, 140, 'A battle through the ages', {
-      fontSize: '16px',
-      fontFamily: 'monospace',
-      color: '#666688',
+    // Subtitle with different font
+    this.add.text(cx, 140, 'A BATTLE THROUGH THE AGES', {
+      fontSize: '14px',
+      fontFamily: "'Trebuchet MS', 'Helvetica', sans-serif",
+      color: '#8888aa',
+      letterSpacing: 8,
     }).setOrigin(0.5);
 
     // ── Mode selection ──
     this.add.text(cx, 190, 'Select Mode', {
       fontSize: '18px',
-      fontFamily: 'monospace',
+      fontFamily: "'Trebuchet MS', 'Segoe UI', sans-serif",
       color: '#aaaacc',
     }).setOrigin(0.5);
 
+    // Mode data
     const modes: Array<{
       label: string;
       desc: string;
-      color: string;
-      bgColor: string;
-      hoverBg: string;
       action: () => void;
     }> = [
       {
         label: 'Classic',
         desc: 'Standard 1v1 battle',
-        color: '#4488ff',
-        bgColor: '#112244',
-        hoverBg: '#1a3366',
         action: () => this.showDifficultySelect(),
       },
       {
         label: 'Campaign',
         desc: '30 story missions',
-        color: '#44ff44',
-        bgColor: '#114422',
-        hoverBg: '#1a6633',
         action: () => this.scene.start('CampaignMapScene'),
       },
       {
         label: 'Survival',
         desc: 'Endless wave defense',
-        color: '#ffcc00',
-        bgColor: '#443311',
-        hoverBg: '#665522',
         action: () => this.scene.start('SurvivalScene'),
       },
       {
         label: 'Sandbox',
         desc: 'Free experimentation',
-        color: '#cc88ff',
-        bgColor: '#221144',
-        hoverBg: '#332266',
         action: () => this.scene.start('SandboxScene'),
       },
       {
         label: 'Multiplayer',
         desc: 'Online PvP',
-        color: '#ff8844',
-        bgColor: '#442211',
-        hoverBg: '#663322',
         action: () => this.scene.start('MultiplayerMenuScene'),
       },
     ];
 
-    const modeSpacing = 160;
-    const modeStartX = cx - ((modes.length - 1) * modeSpacing) / 2;
+    // ── Row 1 (y=240): Classic — large, gold accent, pulsing ──
+    const classicMode = modes[0];
+    const classicBtn = this.add.text(cx, 240, '\u2694  CLASSIC  \u2694', {
+      fontSize: '28px',
+      fontFamily: "'Impact', sans-serif",
+      color: '#ffffff',
+      backgroundColor: '#2244aa',
+      padding: { x: 40, y: 16 },
+      fontStyle: 'bold',
+      stroke: '#1a3366',
+      strokeThickness: 1,
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-    for (let i = 0; i < modes.length; i++) {
-      const mode = modes[i];
-      const x = modeStartX + i * modeSpacing;
+    // Subtle pulse glow on Classic
+    this.tweens.add({
+      targets: classicBtn,
+      alpha: { from: 1, to: 0.85 },
+      duration: 1200,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
 
-      // Mode button
-      const btn = this.add.text(x, 240, mode.label, {
+    this.add.text(cx, 280, classicMode.desc, {
+      fontSize: '13px',
+      fontFamily: "'Trebuchet MS', 'Segoe UI', sans-serif",
+      color: '#8888aa',
+    }).setOrigin(0.5);
+
+    classicBtn.on('pointerover', () => classicBtn.setBackgroundColor('#3366cc'));
+    classicBtn.on('pointerout', () => classicBtn.setBackgroundColor('#2244aa'));
+    classicBtn.on('pointerdown', classicMode.action);
+
+    // ── Row 2 (y=320): Campaign + Survival — medium, side by side ──
+    const row2Modes = [modes[1], modes[2]];
+    const row2Colors = [
+      { color: '#44ff44', bgColor: '#114422', hoverBg: '#1a6633' },
+      { color: '#ffcc00', bgColor: '#443311', hoverBg: '#665522' },
+    ];
+    const row2Spacing = 200;
+    const row2StartX = cx - row2Spacing / 2;
+
+    for (let i = 0; i < row2Modes.length; i++) {
+      const mode = row2Modes[i];
+      const colors = row2Colors[i];
+      const x = row2StartX + i * row2Spacing;
+
+      const btn = this.add.text(x, 320, mode.label, {
         fontSize: '20px',
-        fontFamily: 'monospace',
-        color: mode.color,
-        backgroundColor: mode.bgColor,
-        padding: { x: 20, y: 12 },
+        fontFamily: "'Impact', sans-serif",
+        color: colors.color,
+        backgroundColor: colors.bgColor,
+        padding: { x: 24, y: 10 },
         fontStyle: 'bold',
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-      // Description below
-      this.add.text(x, 280, mode.desc, {
-        fontSize: '13px',
-        fontFamily: 'monospace',
+      this.add.text(x, 355, mode.desc, {
+        fontSize: '12px',
+        fontFamily: "'Trebuchet MS', 'Segoe UI', sans-serif",
         color: '#666688',
       }).setOrigin(0.5);
 
-      btn.on('pointerover', () => btn.setBackgroundColor(mode.hoverBg));
-      btn.on('pointerout', () => btn.setBackgroundColor(mode.bgColor));
+      btn.on('pointerover', () => btn.setBackgroundColor(colors.hoverBg));
+      btn.on('pointerout', () => btn.setBackgroundColor(colors.bgColor));
       btn.on('pointerdown', mode.action);
     }
 
-    // ── Meta buttons row (Settings, Profile, Tutorial) ──
+    // ── Row 3 (y=380): Sandbox + Multiplayer — small, muted colors ──
+    const row3Modes = [modes[3], modes[4]];
+    const row3Colors = [
+      { color: '#9977bb', bgColor: '#1a1133', hoverBg: '#2a2244' },
+      { color: '#bb7744', bgColor: '#221a11', hoverBg: '#332a22' },
+    ];
+    const row3Spacing = 180;
+    const row3StartX = cx - row3Spacing / 2;
+
+    for (let i = 0; i < row3Modes.length; i++) {
+      const mode = row3Modes[i];
+      const colors = row3Colors[i];
+      const x = row3StartX + i * row3Spacing;
+
+      const btn = this.add.text(x, 390, mode.label, {
+        fontSize: '15px',
+        fontFamily: "'Impact', sans-serif",
+        color: colors.color,
+        backgroundColor: colors.bgColor,
+        padding: { x: 16, y: 8 },
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+      this.add.text(x, 420, mode.desc, {
+        fontSize: '11px',
+        fontFamily: "'Trebuchet MS', 'Segoe UI', sans-serif",
+        color: '#555566',
+      }).setOrigin(0.5);
+
+      btn.on('pointerover', () => btn.setBackgroundColor(colors.hoverBg));
+      btn.on('pointerout', () => btn.setBackgroundColor(colors.bgColor));
+      btn.on('pointerdown', mode.action);
+    }
+
+    // ── Meta buttons row (Settings, Profile, Tutorial) — subtle text links ──
     const metaY = 620;
     const metaButtons: Array<{
       label: string;
-      color: string;
-      bgColor: string;
-      hoverBg: string;
       scene: string;
     }> = [
-      { label: 'Settings', color: '#aaaacc', bgColor: '#1a1a2e', hoverBg: '#2a2a3e', scene: 'SettingsScene' },
-      { label: 'Profile', color: '#aaaacc', bgColor: '#1a1a2e', hoverBg: '#2a2a3e', scene: 'ProfileScene' },
-      { label: 'Tutorial', color: '#aaaacc', bgColor: '#1a1a2e', hoverBg: '#2a2a3e', scene: 'TutorialScene' },
+      { label: 'Settings', scene: 'SettingsScene' },
+      { label: 'Profile', scene: 'ProfileScene' },
+      { label: 'Tutorial', scene: 'TutorialScene' },
     ];
 
     const metaSpacing = 140;
@@ -165,15 +265,13 @@ export class MainMenuScene extends Phaser.Scene {
       const x = metaStartX + i * metaSpacing;
 
       const btn = this.add.text(x, metaY, meta.label, {
-        fontSize: '14px',
-        fontFamily: 'monospace',
-        color: meta.color,
-        backgroundColor: meta.bgColor,
-        padding: { x: 14, y: 8 },
+        fontSize: '13px',
+        fontFamily: "'Trebuchet MS', sans-serif",
+        color: '#666688',
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-      btn.on('pointerover', () => btn.setBackgroundColor(meta.hoverBg));
-      btn.on('pointerout', () => btn.setBackgroundColor(meta.bgColor));
+      btn.on('pointerover', () => btn.setColor('#aaaacc'));
+      btn.on('pointerout', () => btn.setColor('#666688'));
       btn.on('pointerdown', () => this.scene.start(meta.scene));
     }
 
@@ -181,7 +279,7 @@ export class MainMenuScene extends Phaser.Scene {
     const completedCount = this.dailyChallengeManager.getCompletedCount();
     this.add.text(cx, 660, `Daily: ${completedCount}/3`, {
       fontSize: '12px',
-      fontFamily: 'monospace',
+      fontFamily: "'Trebuchet MS', 'Segoe UI', sans-serif",
       color: completedCount >= 3 ? '#44ff44' : '#ffd700',
     }).setOrigin(0.5);
 
@@ -193,7 +291,7 @@ export class MainMenuScene extends Phaser.Scene {
     // ── Footer ──
     this.add.text(cx, height - 20, 'Q/W/E/R = Spawn Units  |  T = Evolve  |  SPACE = Special  |  ESC = Pause', {
       fontSize: '11px',
-      fontFamily: 'monospace',
+      fontFamily: "'Trebuchet MS', 'Segoe UI', sans-serif",
       color: '#444466',
     }).setOrigin(0.5);
   }
@@ -207,19 +305,19 @@ export class MainMenuScene extends Phaser.Scene {
     const minutes = Math.floor(elapsed / 60);
     const seconds = elapsed % 60;
 
-    this.resumeBg = this.add.rectangle(cx, 320, 400, 80, 0x111133, 0.9)
+    this.resumeBg = this.add.rectangle(cx, 470, 400, 80, 0x111133, 0.9)
       .setStrokeStyle(2, 0x4488ff);
 
-    this.resumePrompt = this.add.text(cx, 310, `Resume ${saveInfo.mode} game? (${minutes}:${String(seconds).padStart(2, '0')})`, {
+    this.resumePrompt = this.add.text(cx, 460, `Resume ${saveInfo.mode} game? (${minutes}:${String(seconds).padStart(2, '0')})`, {
       fontSize: '14px',
-      fontFamily: 'monospace',
+      fontFamily: "'Trebuchet MS', 'Segoe UI', sans-serif",
       color: '#ffffff',
       align: 'center',
     }).setOrigin(0.5);
 
-    const resumeBtn = this.add.text(cx - 60, 340, 'Resume', {
+    const resumeBtn = this.add.text(cx - 60, 490, 'Resume', {
       fontSize: '14px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', sans-serif",
       color: '#44ff44',
       backgroundColor: '#224422',
       padding: { x: 12, y: 6 },
@@ -229,9 +327,9 @@ export class MainMenuScene extends Phaser.Scene {
       this.scene.start('GameScene', { difficulty: saveInfo.difficulty as 'easy' | 'normal' | 'hard' });
     });
 
-    const discardBtn = this.add.text(cx + 60, 340, 'Discard', {
+    const discardBtn = this.add.text(cx + 60, 490, 'Discard', {
       fontSize: '14px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', sans-serif",
       color: '#ff4444',
       backgroundColor: '#442222',
       padding: { x: 12, y: 6 },
@@ -257,9 +355,9 @@ export class MainMenuScene extends Phaser.Scene {
     }
 
     // ── Difficulty selector ──
-    this.add.text(cx, 380, 'Difficulty', {
+    this.add.text(cx, 530, 'Difficulty', {
       fontSize: '18px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
       color: '#aaaacc',
     }).setOrigin(0.5);
 
@@ -276,9 +374,9 @@ export class MainMenuScene extends Phaser.Scene {
       const diff = difficulties[i];
       const x = btnStartX + i * btnSpacing;
 
-      const btn = this.add.text(x, 420, diff.label, {
+      const btn = this.add.text(x, 565, diff.label, {
         fontSize: '16px',
-        fontFamily: 'monospace',
+        fontFamily: "'Impact', sans-serif",
         color: diff.value === this.selectedDifficulty ? '#44ff44' : '#888888',
         backgroundColor: diff.value === this.selectedDifficulty ? '#224422' : '#1a1a2e',
         padding: { x: 14, y: 8 },
@@ -301,9 +399,9 @@ export class MainMenuScene extends Phaser.Scene {
     }
 
     // ── Play button ──
-    const playBtn = this.add.text(cx, 490, 'PLAY CLASSIC', {
+    const playBtn = this.add.text(cx, 620, 'PLAY CLASSIC', {
       fontSize: '24px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', sans-serif",
       color: '#ffffff',
       backgroundColor: '#2244aa',
       padding: { x: 40, y: 12 },

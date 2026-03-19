@@ -155,9 +155,14 @@ export class HUD extends Phaser.Scene {
   private createTopBar(width: number): void {
     const h = HUD.TOP_BAR_HEIGHT;
 
-    // Background
-    this.topBarBg = this.add.rectangle(width / 2, h / 2, width, h, 0x000000, 0.65);
-    this.topBarBg.setDepth(0);
+    // Background — gradient feel with accent line
+    const topGfx = this.add.graphics().setDepth(0);
+    topGfx.fillStyle(0x000000, 0.75);
+    topGfx.fillRect(0, 0, width, h);
+    topGfx.fillStyle(0x111133, 0.3);
+    topGfx.fillRect(0, h - 2, width, 2); // Subtle bottom accent line
+    this.topBarBg = this.add.rectangle(width / 2, h / 2, width, h, 0x000000, 0)
+      .setDepth(0);
 
     // ── Player base HP (top-left) ──
     const hpX = 12;
@@ -165,12 +170,15 @@ export class HUD extends Phaser.Scene {
     this.playerHpBarBg = this.add.rectangle(hpX + 50, hpY, 100, 14, 0x333333).setOrigin(0.5);
     this.playerHpBarFill = this.add.rectangle(hpX, hpY, 100, 14, 0x44cc44).setOrigin(0, 0.5);
     this.playerHpText = this.add.text(hpX + 50, hpY, '500/500', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '12px', fontFamily: "'Courier New', monospace", color: '#ffffff',
     }).setOrigin(0.5).setDepth(2);
 
-    // ── Gold display ──
-    this.goldText = this.add.text(130, hpY, 'Gold: 50', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#ffd700',
+    // ── Gold display with coin icon ──
+    const goldTextX = 144;
+    this.add.circle(goldTextX - 14, hpY, 5, 0xFFD700).setDepth(2);
+    this.add.circle(goldTextX - 14, hpY, 3, 0xDAA520).setDepth(3); // Inner ring
+    this.goldText = this.add.text(goldTextX, hpY, 'Gold: 50', {
+      fontSize: '14px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffd700',
     }).setOrigin(0, 0.5).setDepth(2);
 
     // ── XP bar (center-left) ──
@@ -178,7 +186,7 @@ export class HUD extends Phaser.Scene {
     this.xpBarBg = this.add.rectangle(xpX + 75, hpY, 150, 14, 0x333333).setOrigin(0.5);
     this.xpBarFill = this.add.rectangle(xpX, hpY, 0, 14, 0x8844ff).setOrigin(0, 0.5);
     this.xpText = this.add.text(xpX + 75, hpY, '0/500', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '12px', fontFamily: "'Courier New', monospace", color: '#ffffff',
     }).setOrigin(0.5).setDepth(2);
 
     // XP bar glow graphics (drawn behind XP bar when full)
@@ -186,17 +194,22 @@ export class HUD extends Phaser.Scene {
 
     // ── Age name (center) ──
     this.ageText = this.add.text(width / 2, hpY, 'Prehistoric', {
-      fontSize: '16px', fontFamily: 'monospace', color: '#ffffff', fontStyle: 'bold',
+      fontSize: '16px',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
+      color: '#FFD700',
+      fontStyle: 'bold',
+      stroke: '#8B6914',
+      strokeThickness: 1,
     }).setOrigin(0.5).setDepth(2);
 
     // ── Weather display (center-right) ──
     this.weatherDisplayText = this.add.text(width / 2 + 120, hpY, 'Weather: Clear', {
-      fontSize: '11px', fontFamily: 'monospace', color: '#aaccff',
+      fontSize: '11px', fontFamily: "'Trebuchet MS', sans-serif", color: '#aaccff',
     }).setOrigin(0, 0.5).setDepth(2);
 
     // ── Hero HP display (to the right of weather) ──
     this.heroHpText = this.add.text(width / 2 + 280, hpY, '', {
-      fontSize: '11px', fontFamily: 'monospace', color: '#ffd700',
+      fontSize: '11px', fontFamily: "'Courier New', monospace", color: '#ffd700',
     }).setOrigin(0, 0.5).setDepth(2);
 
     // ── Enemy base HP bar (right) ──
@@ -204,12 +217,12 @@ export class HUD extends Phaser.Scene {
     this.enemyHpBarBg = this.add.rectangle(eHpX, hpY, 100, 14, 0x333333).setOrigin(0.5);
     this.enemyHpBarFill = this.add.rectangle(eHpX - 50, hpY, 100, 14, 0xcc4444).setOrigin(0, 0.5);
     this.enemyHpText = this.add.text(eHpX, hpY, '500/500', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '12px', fontFamily: "'Courier New', monospace", color: '#ffffff',
     }).setOrigin(0.5).setDepth(2);
 
     // ── Pause button (top-right corner, for mobile/touch) ──
     const pauseBtn = this.add.text(width - 40, 18, '\u23F8', {
-      fontSize: '20px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '20px', fontFamily: "'Trebuchet MS', sans-serif", color: '#ffffff',
     }).setOrigin(0.5).setDepth(2).setInteractive({ useHandCursor: true });
     pauseBtn.on('pointerdown', () => this.events.emit('pause-pressed'));
   }
@@ -220,9 +233,14 @@ export class HUD extends Phaser.Scene {
     const barH = HUD.BOTTOM_BAR_HEIGHT;
     const barY = height - barH / 2;
 
-    // Background
-    this.bottomBarBg = this.add.rectangle(width / 2, barY, width, barH, 0x000000, 0.7);
-    this.bottomBarBg.setDepth(0);
+    // Background — gradient feel with accent line
+    const bottomGfx = this.add.graphics().setDepth(0);
+    bottomGfx.fillStyle(0x000000, 0.75);
+    bottomGfx.fillRect(0, height - barH, width, barH);
+    bottomGfx.fillStyle(0x111133, 0.3);
+    bottomGfx.fillRect(0, height - barH, width, 2); // Subtle top accent line
+    this.bottomBarBg = this.add.rectangle(width / 2, barY, width, barH, 0x000000, 0)
+      .setDepth(0);
 
     // ── 4 Unit spawn buttons ──
     const btnW = HUD.BUTTON_W;
@@ -236,7 +254,7 @@ export class HUD extends Phaser.Scene {
       const def = this.unitDefs[i];
 
       const bg = this.add.rectangle(x, y, btnW, btnH, 0x224466, 1)
-        .setStrokeStyle(2, 0x4488cc)
+        .setStrokeStyle(2, 0x3366aa)
         .setDepth(1)
         .setInteractive({ useHandCursor: true });
 
@@ -255,15 +273,15 @@ export class HUD extends Phaser.Scene {
       });
 
       const nameText = this.add.text(x, y - 14, def.name, {
-        fontSize: '11px', fontFamily: 'monospace', color: '#ffffff',
+        fontSize: '11px', fontFamily: "'Trebuchet MS', 'Segoe UI', sans-serif", color: '#ffffff',
       }).setOrigin(0.5).setDepth(2);
 
       const costText = this.add.text(x, y + 2, `$${def.cost}`, {
-        fontSize: '11px', fontFamily: 'monospace', color: '#ffd700',
+        fontSize: '11px', fontFamily: "'Courier New', monospace", color: '#ffd700',
       }).setOrigin(0.5).setDepth(2);
 
       const keyText = this.add.text(x, y + 18, `[${def.key}]`, {
-        fontSize: '12px', fontFamily: 'monospace', color: '#aaaaaa',
+        fontSize: '12px', fontFamily: "'Courier New', monospace", color: '#aaaaaa',
       }).setOrigin(0.5).setDepth(2);
 
       // Cooldown overlay (invisible by default)
@@ -284,10 +302,10 @@ export class HUD extends Phaser.Scene {
       this.events.emit('evolve-pressed');
     });
     this.evolveBtnText = this.add.text(evolveX, barY - 6, 'EVOLVE', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#44ff44', fontStyle: 'bold',
+      fontSize: '12px', fontFamily: "'Impact', sans-serif", color: '#44ff44', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(2);
     this.evolveKeyText = this.add.text(evolveX, barY + 14, '[T]', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#aaaaaa',
+      fontSize: '12px', fontFamily: "'Courier New', monospace", color: '#aaaaaa',
     }).setOrigin(0.5).setDepth(2);
 
     // ── SPECIAL button ──
@@ -300,10 +318,10 @@ export class HUD extends Phaser.Scene {
       this.events.emit('special-pressed');
     });
     this.specialBtnText = this.add.text(specialX, barY - 6, 'READY', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#ff4444', fontStyle: 'bold',
+      fontSize: '12px', fontFamily: "'Impact', sans-serif", color: '#ff4444', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(2);
     this.add.text(specialX, barY + 14, '[SPACE]', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#aaaaaa',
+      fontSize: '12px', fontFamily: "'Courier New', monospace", color: '#aaaaaa',
     }).setOrigin(0.5).setDepth(2);
 
     // Cooldown pie chart graphics
@@ -319,7 +337,7 @@ export class HUD extends Phaser.Scene {
       this.events.emit('hero-ability', 0);
     });
     this.heroBtn1Text = this.add.text(heroX, barY, '[1]', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#cccc44',
+      fontSize: '12px', fontFamily: "'Courier New', monospace", color: '#cccc44',
     }).setOrigin(0.5).setDepth(2);
 
     this.heroBtn2 = this.add.rectangle(heroX + 52, barY, 44, btnH, 0x444422, 1)
@@ -330,7 +348,7 @@ export class HUD extends Phaser.Scene {
       this.events.emit('hero-ability', 1);
     });
     this.heroBtn2Text = this.add.text(heroX + 52, barY, '[2]', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#cccc44',
+      fontSize: '12px', fontFamily: "'Courier New', monospace", color: '#cccc44',
     }).setOrigin(0.5).setDepth(2);
   }
 
@@ -445,7 +463,7 @@ export class HUD extends Phaser.Scene {
       if (isHovered && canAfford) {
         btn.bg.setStrokeStyle(2, 0x66aaee);
       } else {
-        btn.bg.setStrokeStyle(2, 0x4488cc);
+        btn.bg.setStrokeStyle(2, 0x3366aa);
       }
 
       // Cooldown fill overlay
@@ -469,11 +487,13 @@ export class HUD extends Phaser.Scene {
       const alpha = 0.7 + 0.3 * Math.sin(this.evolvePulseTimer * 4);
       this.evolveBtn.setFillStyle(0x22aa22);
       this.evolveBtn.setAlpha(alpha);
+      this.evolveBtn.setStrokeStyle(2, 0x44ff44); // Green glowing border
       this.evolveBtnText.setColor('#44ff44');
       this.evolveKeyText.setText('READY [T]');
     } else {
       this.evolveBtn.setFillStyle(0x222222);
       this.evolveBtn.setAlpha(1);
+      this.evolveBtn.setStrokeStyle(2, 0x336633); // Dim border
       this.evolveBtnText.setColor('#666666');
       this.evolveKeyText.setText('[T]');
     }
