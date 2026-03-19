@@ -20,6 +20,11 @@ export class World {
   /** Entities scheduled for removal at the end of the current frame. */
   private readonly removalQueue: Set<EntityId> = new Set();
 
+  /** Per-frame query cache: key → result array. Cleared by clearQueryCache(). */
+  private readonly queryCache: Map<string, EntityId[]> = new Map();
+  /** Whether the component stores have been mutated since last cache clear. */
+  private queryCacheDirty = false;
+
   // ── Entity lifecycle ──────────────────────────────────────────
 
   /** Create a new entity and return its ID. */
@@ -40,6 +45,7 @@ export class World {
     for (const store of this.stores.values()) {
       store.delete(entityId);
     }
+    this.queryCacheDirty = true;
   }
 
   /** Process all pending entity removals. Call once per frame after all systems. */
@@ -81,6 +87,7 @@ export class World {
   addComponent<T>(entityId: EntityId, name: string, data: T): void {
     const store = this.getStore<T>(name);
     store.set(entityId, data);
+    this.queryCacheDirty = true;
   }
 
   /** Get a component from an entity (or undefined). */
@@ -99,17 +106,43 @@ export class World {
   /** Remove a component from an entity. */
   removeComponent(entityId: EntityId, name: string): void {
     const store = this.stores.get(name);
-    if (store) store.delete(entityId);
+    if (store) {
+      store.delete(entityId);
+      this.queryCacheDirty = true;
+    }
   }
 
   // ── Queries ───────────────────────────────────────────────────
 
   /**
+   * Clear the per-frame query cache. Call once at the start of each frame
+   * (before systems run) so that repeated identical queries within the same
+   * frame return cached results instead of re-scanning stores.
+   */
+  clearQueryCache(): void {
+    if (this.queryCacheDirty || this.queryCache.size > 0) {
+      this.queryCache.clear();
+      this.queryCacheDirty = false;
+    }
+  }
+
+  /**
    * Return all entity IDs that possess every one of the listed components.
    * This is the primary way systems find entities to operate on.
+   *
+   * Results are cached within a frame (between clearQueryCache() calls) so
+   * multiple systems querying the same component set don't re-scan.
    */
   query(...componentNames: string[]): EntityId[] {
     if (componentNames.length === 0) return [...this.entities];
+
+    // Build a stable cache key (sort to make order-independent)
+    const cacheKey = componentNames.length === 1
+      ? componentNames[0]
+      : [...componentNames].sort().join('\0');
+
+    const cached = this.queryCache.get(cacheKey);
+    if (cached !== undefined) return cached;
 
     // Use the smallest store as the iteration base for efficiency.
     let smallest: ComponentMap<unknown> | undefined;
@@ -117,14 +150,22 @@ export class World {
 
     for (const name of componentNames) {
       const store = this.stores.get(name);
-      if (!store || store.size === 0) return []; // missing store ⇒ no matches
+      if (!store || store.size === 0) {
+        const empty: EntityId[] = [];
+        this.queryCache.set(cacheKey, empty);
+        return empty;
+      }
       if (store.size < smallestSize) {
         smallest = store;
         smallestSize = store.size;
       }
     }
 
-    if (!smallest) return [];
+    if (!smallest) {
+      const empty: EntityId[] = [];
+      this.queryCache.set(cacheKey, empty);
+      return empty;
+    }
 
     const results: EntityId[] = [];
     for (const entityId of smallest.keys()) {
@@ -139,6 +180,7 @@ export class World {
       if (match) results.push(entityId);
     }
 
+    this.queryCache.set(cacheKey, results);
     return results;
   }
 

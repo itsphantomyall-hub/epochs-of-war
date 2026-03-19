@@ -163,6 +163,9 @@ export class GameScene extends Phaser.Scene {
   // ── Phaser rectangle pool (legacy fallback): ECS entityId → Phaser rectangle ──
   private entityRects: Map<number, Phaser.GameObjects.Rectangle> = new Map();
 
+  // ── Reusable set for tracking alive entities each frame (avoids GC pressure) ──
+  private readonly aliveIdsSet: Set<number> = new Set();
+
   // ── Bases ──
   private playerBase!: Phaser.GameObjects.Rectangle;
   private enemyBase!: Phaser.GameObjects.Rectangle;
@@ -250,6 +253,16 @@ export class GameScene extends Phaser.Scene {
     this.turretsDisabled = false;
     this.passiveIncomeDisabled = false;
     this.evolutionLocked = false;
+
+    // Reset hero visual references (old GOs are destroyed by scene restart)
+    this.heroImage = null;
+    this.heroGlow = null;
+    this.heroRect = null;
+    this.heroEntityId = null;
+
+    // Reset rendered age trackers so textures are reapplied
+    this.lastRenderedPlayerAge = 0;
+    this.lastRenderedEnemyAge = 0;
   }
 
   create(): void {
@@ -714,6 +727,7 @@ export class GameScene extends Phaser.Scene {
 
     // Game over events
     this.gameManager.events.on('gameOver', (e) => {
+      if (this.gameState.isGameOver) return; // Prevent double processing
       this.gameState.isGameOver = true;
       this.gameState.winner = e.winner;
 
@@ -724,6 +738,14 @@ export class GameScene extends Phaser.Scene {
         this.audioManager.playSFX('defeat');
       }
       this.audioManager.stopMusic();
+
+      // Campaign: calculate stars and save progress on victory
+      if (e.winner === 'player' && this.mode === 'campaign' && this.currentMission && this.campaignManager) {
+        const elapsed = this.gameState.elapsedTime;
+        const hpPct = (this.gameState.player.baseHp / this.gameState.player.baseMaxHp) * 100;
+        this.campaignStars = this.campaignManager.calculateStars(this.currentMission.id, elapsed, hpPct);
+        this.campaignManager.completeMission(this.currentMission.id, this.campaignStars);
+      }
 
       // Base destruction collapse effect
       if (e.winner === 'player') {
@@ -1354,8 +1376,9 @@ export class GameScene extends Phaser.Scene {
 
     if (this.gameState.isPaused) {
       this.gameManager.pause();
-      this.scene.pause();
-      // Show a simple pause overlay
+      // Show a simple pause overlay — do NOT call this.scene.pause()
+      // because Phaser pauses input processing for paused scenes,
+      // which would prevent the ESC key from ever unpausing.
       const pauseText = this.add.text(640, 360, 'PAUSED\n\nPress ESC to resume', {
         fontSize: '32px',
         fontFamily: 'monospace',
@@ -1365,12 +1388,16 @@ export class GameScene extends Phaser.Scene {
         padding: { x: 40, y: 20 },
       }).setOrigin(0.5).setDepth(9999).setName('pauseOverlay');
 
-      this.input.keyboard?.once('keydown-ESC', () => {
-        pauseText.destroy();
-        this.gameState.isPaused = false;
-        this.gameManager.resume();
-        this.scene.resume();
-      });
+      // Use game.input.keyboard to listen at the game level (works even when scene is paused)
+      const onResume = (event: KeyboardEvent) => {
+        if (event.code === 'Escape') {
+          pauseText.destroy();
+          this.gameState.isPaused = false;
+          this.gameManager.resume();
+          window.removeEventListener('keydown', onResume);
+        }
+      };
+      window.addEventListener('keydown', onResume);
     }
   }
 
@@ -1557,25 +1584,9 @@ export class GameScene extends Phaser.Scene {
     // Update floating text
     this.floatingText.update(time, delta);
 
-    // Check win/lose from GameManager state
-    if (this.gameManager.state === 'victory' && !this.gameState.isGameOver) {
-      this.gameState.isGameOver = true;
-      this.gameState.winner = 'player';
-
-      // Campaign: calculate stars and save progress
-      if (this.mode === 'campaign' && this.currentMission && this.campaignManager) {
-        const elapsed = this.gameState.elapsedTime;
-        const hpPct = (this.gameState.player.baseHp / this.gameState.player.baseMaxHp) * 100;
-        this.campaignStars = this.campaignManager.calculateStars(this.currentMission.id, elapsed, hpPct);
-        this.campaignManager.completeMission(this.currentMission.id, this.campaignStars);
-      }
-
-      this.playBaseCollapse('enemy');
-    } else if (this.gameManager.state === 'defeat' && !this.gameState.isGameOver) {
-      this.gameState.isGameOver = true;
-      this.gameState.winner = 'enemy';
-      this.playBaseCollapse('player');
-    }
+    // Game-over is now fully handled by the 'gameOver' event in wireEvents().
+    // No redundant check needed here — the event fires synchronously during
+    // gameManager.update() above, so isGameOver is already set by this point.
   }
 
   // ─────────────────────── VISUAL UPDATES ───────────────────────
@@ -1637,15 +1648,17 @@ export class GameScene extends Phaser.Scene {
     const world = this.gameManager.world;
     const renderableEntities = world.query('Position', 'Faction', 'Renderable');
 
-    // Track which entity IDs are still alive this frame
-    const aliveIds = new Set<number>();
+    // Reuse a persistent set instead of allocating a new one every frame
+    const aliveIds = this.aliveIdsSet;
+    aliveIds.clear();
 
     for (const entityId of renderableEntities) {
       aliveIds.add(entityId);
 
-      const pos = world.getComponent<Position>(entityId, 'Position')!;
-      const faction = world.getComponent<Faction>(entityId, 'Faction')!;
-      const renderable = world.getComponent<Renderable>(entityId, 'Renderable')!;
+      const pos = world.getComponent<Position>(entityId, 'Position');
+      const faction = world.getComponent<Faction>(entityId, 'Faction');
+      const renderable = world.getComponent<Renderable>(entityId, 'Renderable');
+      if (!pos || !faction || !renderable) continue;
       const unitType = world.getComponent<UnitTypeComponent>(entityId, 'UnitType');
 
       if (!renderable.visible) {
@@ -2038,6 +2051,15 @@ export class GameScene extends Phaser.Scene {
         img.destroy();
       }
       this.turretImages.clear();
+      for (const [, rect] of this.turretRects) {
+        rect.destroy();
+      }
+      this.turretRects.clear();
+
+      // Clean up hero visuals
+      if (this.heroImage) { this.heroImage.destroy(); this.heroImage = null; }
+      if (this.heroGlow) { this.heroGlow.destroy(); this.heroGlow = null; }
+      if (this.heroRect) { this.heroRect.destroy(); this.heroRect = null; }
 
       // Clean up particles and juice
       this.particles.destroy();

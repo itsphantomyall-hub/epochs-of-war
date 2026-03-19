@@ -17,14 +17,22 @@ export class HealthSystem {
     this.events = events;
   }
 
+  /** Track IDs already emitted this frame to prevent duplicate death events. */
+  private readonly emittedDeaths: Set<number> = new Set();
+
   update(world: World, _deltaTime: number): void {
+    this.emittedDeaths.clear();
     const entities = world.query('Health');
 
     for (let i = 0; i < entities.length; i++) {
       const id = entities[i];
-      const health = world.getComponent<Health>(id, 'Health')!;
+      if (!world.isAlive(id)) continue;
 
-      if (health.current <= 0) {
+      const health = world.getComponent<Health>(id, 'Health');
+      if (!health) continue;
+
+      if (health.current <= 0 && !this.emittedDeaths.has(id)) {
+        this.emittedDeaths.add(id);
         // Gather info for the death event before we mark for removal
         const faction = world.getComponent<Faction>(id, 'Faction');
         const unitType = world.getComponent<UnitType>(id, 'UnitType');

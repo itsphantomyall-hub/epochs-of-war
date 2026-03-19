@@ -17,5 +17,14 @@ export default defineConfig({
     target: 'es2022',
     outDir: 'dist',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules/phaser')) {
+            return 'phaser';
+          }
+        },
+      },
+    },
   },
 });

@@ -21,6 +21,11 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Reset state from previous visits (Phaser reuses the scene instance)
+    this.difficultyButtons = [];
+    this.resumePrompt = null;
+    this.resumeBg = null;
+
     this.tutorialManager = new TutorialManager();
     this.saveManager = new SaveManager();
     this.dailyChallengeManager = new DailyChallengeManager();

@@ -381,18 +381,21 @@ export class SurvivalScene extends Phaser.Scene {
     this.gameState.isPaused = !this.gameState.isPaused;
     if (this.gameState.isPaused) {
       this.gameManager.pause();
-      this.scene.pause();
+      // Do NOT call this.scene.pause() — it prevents input from unpausing
       const pauseText = this.add.text(640, 360, 'PAUSED\n\nPress ESC to resume', {
         fontSize: '32px', fontFamily: 'monospace', color: '#ffffff',
         align: 'center', backgroundColor: '#00000088', padding: { x: 40, y: 20 },
       }).setOrigin(0.5).setDepth(9999);
 
-      this.input.keyboard?.once('keydown-ESC', () => {
-        pauseText.destroy();
-        this.gameState.isPaused = false;
-        this.gameManager.resume();
-        this.scene.resume();
-      });
+      const onResume = (event: KeyboardEvent) => {
+        if (event.code === 'Escape') {
+          pauseText.destroy();
+          this.gameState.isPaused = false;
+          this.gameManager.resume();
+          window.removeEventListener('keydown', onResume);
+        }
+      };
+      window.addEventListener('keydown', onResume);
     }
   }
 

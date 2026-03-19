@@ -512,31 +512,45 @@ export class ParticleManager {
 
   /**
    * Remove all particles with the given tag.
+   * Uses swap-and-pop for O(1) per removal.
    */
   removeByTag(tag: string): void {
-    for (let i = this.active.length - 1; i >= 0; i--) {
+    let i = this.active.length;
+    while (i-- > 0) {
       if (this.active[i].tag === tag) {
         this.release(this.active[i].gameObject);
-        this.active.splice(i, 1);
+        const last = this.active.length - 1;
+        if (i !== last) {
+          this.active[i] = this.active[last];
+        }
+        this.active.pop();
       }
     }
   }
 
   /**
    * Update stun stars position to follow a unit.
+   * Avoids allocating a filtered array each frame.
    */
   updateTagPosition(tag: string, x: number, y: number): void {
-    const tagged = this.active.filter(p => p.tag === tag);
-    const count = tagged.length;
+    // First pass: count tagged particles
+    let count = 0;
+    for (let i = 0; i < this.active.length; i++) {
+      if (this.active[i].tag === tag) count++;
+    }
     if (count === 0) return;
 
-    // Simple orbit
+    // Second pass: update positions with orbit
     const time = performance.now() / 1000;
-    for (let i = 0; i < count; i++) {
-      const angle = (Math.PI * 2 * i) / count + time * 3;
+    let idx = 0;
+    for (let i = 0; i < this.active.length; i++) {
+      const p = this.active[i];
+      if (p.tag !== tag) continue;
+      const angle = (Math.PI * 2 * idx) / count + time * 3;
       const radius = 8;
-      tagged[i].x = x + Math.cos(angle) * radius;
-      tagged[i].y = y - 16 + Math.sin(angle) * radius * 0.4;
+      p.x = x + Math.cos(angle) * radius;
+      p.y = y - 16 + Math.sin(angle) * radius * 0.4;
+      idx++;
     }
   }
 
@@ -544,16 +558,23 @@ export class ParticleManager {
 
   /**
    * Tick all active particles, remove dead ones.
+   * Uses swap-and-pop instead of splice for O(1) removal.
    * @param delta Seconds since last frame.
    */
   update(delta: number): void {
-    for (let i = this.active.length - 1; i >= 0; i--) {
+    let i = this.active.length;
+    while (i-- > 0) {
       const p = this.active[i];
       p.life -= delta;
 
       if (p.life <= 0) {
         this.release(p.gameObject);
-        this.active.splice(i, 1);
+        // Swap with last element and pop — O(1) instead of O(n) splice
+        const last = this.active.length - 1;
+        if (i !== last) {
+          this.active[i] = this.active[last];
+        }
+        this.active.pop();
         continue;
       }
 

@@ -78,8 +78,9 @@ export class MovementSystem {
       const cf = world.getComponent<Faction>(cid, 'Faction');
       if (!cf || cf.faction === selfFaction) continue;
 
-      // Must be damageable
-      if (!world.hasComponent(cid, 'Health')) continue;
+      // Must be damageable and still alive (HP > 0)
+      const health = world.getComponent<{ current: number }>(cid, 'Health');
+      if (!health || health.current <= 0) continue;
 
       const cp = world.getComponent<Position>(cid, 'Position')!;
       const dx = cp.x - selfPos.x;

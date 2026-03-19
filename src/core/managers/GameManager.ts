@@ -132,6 +132,9 @@ export class GameManager {
   update(deltaTime: number): void {
     if (this._state !== 'playing') return;
 
+    // Clear per-frame query cache so repeated identical queries are fast
+    this.world.clearQueryCache();
+
     this._elapsedTime += deltaTime;
 
     // Update time singleton
@@ -176,9 +179,16 @@ export class GameManager {
 
     for (let i = 0; i < units.length; i++) {
       const id = units[i];
-      const pos = this.world.getComponent<Position>(id, 'Position')!;
-      const faction = this.world.getComponent<{ faction: 'player' | 'enemy' }>(id, 'Faction')!;
-      const combat = this.world.getComponent<{ damage: number }>(id, 'Combat')!;
+      if (!this.world.isAlive(id)) continue;
+
+      // Skip already-dead units (HP <= 0 but not yet flushed)
+      const health = this.world.getComponent<{ current: number }>(id, 'Health');
+      if (health && health.current <= 0) continue;
+
+      const pos = this.world.getComponent<Position>(id, 'Position');
+      const faction = this.world.getComponent<{ faction: 'player' | 'enemy' }>(id, 'Faction');
+      const combat = this.world.getComponent<{ damage: number }>(id, 'Combat');
+      if (!pos || !faction || !combat) continue;
 
       // Player units reaching the right edge hit enemy base
       if (faction.faction === 'player' && pos.x >= 1550) {

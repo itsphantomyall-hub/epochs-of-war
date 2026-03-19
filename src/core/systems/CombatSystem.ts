@@ -47,9 +47,16 @@ export class CombatSystem {
 
     for (let i = 0; i < combatants.length; i++) {
       const attackerId = combatants[i];
-      const attackerPos = world.getComponent<Position>(attackerId, 'Position')!;
-      const combat = world.getComponent<Combat>(attackerId, 'Combat')!;
-      const attackerFaction = world.getComponent<Faction>(attackerId, 'Faction')!;
+      if (!world.isAlive(attackerId)) continue;
+
+      const attackerPos = world.getComponent<Position>(attackerId, 'Position');
+      const combat = world.getComponent<Combat>(attackerId, 'Combat');
+      const attackerFaction = world.getComponent<Faction>(attackerId, 'Faction');
+      if (!attackerPos || !combat || !attackerFaction) continue;
+
+      // Skip entities already dead (HP <= 0) but not yet flushed
+      const attackerHealth = world.getComponent<Health>(attackerId, 'Health');
+      if (attackerHealth && attackerHealth.current <= 0) continue;
 
       // Use effective range: melee uses a small default range
       const effectiveRange = combat.range > 0 ? combat.range : 40;
@@ -125,10 +132,11 @@ export class CombatSystem {
       const candidateFaction = world.getComponent<Faction>(candidateId, 'Faction');
       if (!candidateFaction || candidateFaction.faction === selfFaction) continue;
 
-      // Must be damageable
-      if (!world.hasComponent(candidateId, 'Health')) continue;
+      // Must be damageable and still alive (HP > 0)
+      const candidateHealth = world.getComponent<Health>(candidateId, 'Health');
+      if (!candidateHealth || candidateHealth.current <= 0) continue;
 
-      const candidatePos = world.getComponent<Position>(candidateId, 'Position')!;
+      const candidatePos = world.getComponent<Position>(candidateId, 'Position')!
       const dx = candidatePos.x - selfPos.x;
       const dy = candidatePos.y - selfPos.y;
       const distSq = dx * dx + dy * dy;
