@@ -1,0 +1,180 @@
+{
+  "achievements": [
+    {
+      "id": "first_blood",
+      "name": "First Blood",
+      "description": "Win your first battle",
+      "category": "progression",
+      "requirement": { "type": "wins", "threshold": 1 },
+      "reward": { "type": "coins", "value": 50 }
+    },
+    {
+      "id": "age_of_discovery",
+      "name": "Age of Discovery",
+      "description": "Reach the Future Age for the first time",
+      "category": "progression",
+      "requirement": { "type": "reach_age", "threshold": 8 },
+      "reward": { "type": "title", "value": "Time Traveler" }
+    },
+    {
+      "id": "campaign_veteran",
+      "name": "Campaign Veteran",
+      "description": "Complete all 30 campaign missions",
+      "category": "progression",
+      "requirement": { "type": "campaign_missions_completed", "threshold": 30 },
+      "reward": { "type": "hero_skin", "value": "Golden Grok" }
+    },
+    {
+      "id": "three_star_general",
+      "name": "Three-Star General",
+      "description": "Earn 3 stars on all campaign missions",
+      "category": "progression",
+      "requirement": { "type": "campaign_stars", "threshold": 90 },
+      "reward": { "type": "base_skin", "value": "Crystal Fortress" }
+    },
+    {
+      "id": "survival_expert",
+      "name": "Survival Expert",
+      "description": "Reach wave 50 in Survival",
+      "category": "progression",
+      "requirement": { "type": "survival_wave", "threshold": 50 },
+      "reward": { "type": "profile_border", "value": "Flame" }
+    },
+    {
+      "id": "century_survivor",
+      "name": "Century Survivor",
+      "description": "Reach wave 100 in Survival",
+      "category": "progression",
+      "requirement": { "type": "survival_wave", "threshold": 100 },
+      "reward": { "type": "unit_skin_set", "value": "Exclusive" }
+    },
+    {
+      "id": "ranked_warrior",
+      "name": "Ranked Warrior",
+      "description": "Win 10 ranked matches",
+      "category": "progression",
+      "requirement": { "type": "ranked_wins", "threshold": 10 },
+      "reward": { "type": "profile_badge", "value": "Ranked" }
+    },
+    {
+      "id": "master_strategist",
+      "name": "Master Strategist",
+      "description": "Win with each of the 5 AI personality counters",
+      "category": "progression",
+      "requirement": { "type": "ai_personality_wins", "threshold": 5 },
+      "reward": { "type": "title", "value": "Grand Marshal" }
+    },
+    {
+      "id": "zerg_rush",
+      "name": "Zerg Rush",
+      "description": "Win a game using only Infantry units",
+      "category": "combat",
+      "requirement": { "type": "win_infantry_only", "threshold": 1 },
+      "reward": { "type": "coins", "value": 100 }
+    },
+    {
+      "id": "glass_cannon",
+      "name": "Glass Cannon",
+      "description": "Win without building any turrets",
+      "category": "combat",
+      "requirement": { "type": "win_no_turrets", "threshold": 1 },
+      "reward": { "type": "unit_skin", "value": "Shadow Infantry" }
+    },
+    {
+      "id": "iron_fortress",
+      "name": "Iron Fortress",
+      "description": "Win without spawning any units (turrets only)",
+      "category": "combat",
+      "requirement": { "type": "win_turrets_only", "threshold": 1 },
+      "reward": { "type": "base_skin", "value": "Iron Citadel" }
+    },
+    {
+      "id": "speedrunner",
+      "name": "Speedrunner",
+      "description": "Win any game in under 5 minutes",
+      "category": "combat",
+      "requirement": { "type": "win_under_time", "threshold": 300 },
+      "reward": { "type": "title", "value": "Blitz Commander" }
+    },
+    {
+      "id": "david_vs_goliath",
+      "name": "David vs Goliath",
+      "description": "Kill a Heavy unit with an Infantry unit",
+      "category": "combat",
+      "requirement": { "type": "infantry_kills_heavy", "threshold": 1 },
+      "reward": { "type": "coins", "value": 25 }
+    },
+    {
+      "id": "age_gap",
+      "name": "Age Gap",
+      "description": "Destroy a Future Age unit with a Prehistoric unit",
+      "category": "combat",
+      "requirement": { "type": "prehistoric_kills_future", "threshold": 1 },
+      "reward": { "type": "title", "value": "Primal Force" }
+    },
+    {
+      "id": "hero_slayer",
+      "name": "Hero Slayer",
+      "description": "Kill 50 enemy heroes total",
+      "category": "combat",
+      "requirement": { "type": "hero_kills", "threshold": 50 },
+      "reward": { "type": "hero_skin", "value": "Blood-Red Leonidas" }
+    },
+    {
+      "id": "overkill",
+      "name": "Overkill",
+      "description": "Deal 1,000+ damage with a single Special ability",
+      "category": "combat",
+      "requirement": { "type": "special_damage_single", "threshold": 1000 },
+      "reward": { "type": "coins", "value": 50 }
+    },
+    {
+      "id": "untouchable",
+      "name": "Untouchable",
+      "description": "Win with base HP at 100%",
+      "category": "combat",
+      "requirement": { "type": "win_full_hp", "threshold": 1 },
+      "reward": { "type": "profile_border", "value": "Diamond" }
+    },
+    {
+      "id": "diversified_portfolio",
+      "name": "Diversified Portfolio",
+      "description": "Use all 32 unit types in a single game",
+      "category": "combat",
+      "requirement": { "type": "unique_units_in_game", "threshold": 32 },
+      "reward": { "type": "coins", "value": 200 }
+    },
+    {
+      "id": "friendly_fire",
+      "name": "Friendly Fire",
+      "description": "Play 5 custom matches with friends",
+      "category": "social",
+      "requirement": { "type": "custom_matches", "threshold": 5 },
+      "reward": { "type": "coins", "value": 50 }
+    },
+    {
+      "id": "top_100",
+      "name": "Top 100",
+      "description": "Reach top 100 on any leaderboard",
+      "category": "social",
+      "requirement": { "type": "leaderboard_rank", "threshold": 100 },
+      "reward": { "type": "animated_border", "value": "Top 100" }
+    },
+    {
+      "id": "replay_star",
+      "name": "Replay Star",
+      "description": "Have a replay watched 100 times",
+      "category": "social",
+      "requirement": { "type": "replay_views", "threshold": 100 },
+      "reward": { "type": "title", "value": "Celebrity" }
+    },
+    {
+      "id": "tournament_victor",
+      "name": "Tournament Victor",
+      "description": "Win a community tournament",
+      "category": "social",
+      "requirement": { "type": "tournament_wins", "threshold": 1 },
+      "reward": { "type": "trophy", "value": "Exclusive Trophy" }
+    }
+  ]
+}

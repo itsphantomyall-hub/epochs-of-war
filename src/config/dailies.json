@@ -1,0 +1,35 @@
+{
+  "dailyChallenges": [
+    { "id": "spawn_50_infantry", "category": "unit", "description": "Spawn 50 Infantry units", "requirement": { "type": "spawn_unit_type", "unitType": "infantry", "target": 50 }, "reward": { "coins": 30 } },
+    { "id": "spawn_30_ranged", "category": "unit", "description": "Spawn 30 Ranged units", "requirement": { "type": "spawn_unit_type", "unitType": "ranged", "target": 30 }, "reward": { "coins": 30 } },
+    { "id": "spawn_10_heavy", "category": "unit", "description": "Spawn 10 Heavy units", "requirement": { "type": "spawn_unit_type", "unitType": "heavy", "target": 10 }, "reward": { "coins": 30 } },
+    { "id": "spawn_15_special", "category": "unit", "description": "Spawn 15 Special units", "requirement": { "type": "spawn_unit_type", "unitType": "special", "target": 15 }, "reward": { "coins": 30 } },
+    { "id": "win_ranged_heavy_only", "category": "unit", "description": "Win using only Ranged and Heavy units", "requirement": { "type": "win_unit_restriction", "target": 1 }, "reward": { "coins": 50 } },
+    { "id": "kill_20_with_hero", "category": "unit", "description": "Kill 20 units with a Hero", "requirement": { "type": "hero_kills_session", "target": 20 }, "reward": { "coins": 40 } },
+    { "id": "win_no_evolve_classical", "category": "age", "description": "Win without evolving past Classical Age", "requirement": { "type": "win_max_age", "maxAge": 3, "target": 1 }, "reward": { "coins": 50 } },
+    { "id": "reach_future_8min", "category": "age", "description": "Reach Future Age in under 8 minutes", "requirement": { "type": "reach_age_time", "age": 8, "maxTime": 480, "target": 1 }, "reward": { "coins": 40 } },
+    { "id": "win_2_different_ages", "category": "age", "description": "Win 2 games starting in different ages", "requirement": { "type": "win_different_ages", "target": 2 }, "reward": { "coins": 40 } },
+    { "id": "evolve_3_times", "category": "age", "description": "Evolve 3 times in a single game", "requirement": { "type": "evolve_count", "target": 3 }, "reward": { "coins": 25 } },
+    { "id": "reach_medieval", "category": "age", "description": "Reach the Medieval Age", "requirement": { "type": "reach_age", "age": 4, "target": 1 }, "reward": { "coins": 20 } },
+    { "id": "earn_5000_gold", "category": "economy", "description": "Earn 5,000 gold in a single game", "requirement": { "type": "gold_earned", "target": 5000 }, "reward": { "coins": 40 } },
+    { "id": "win_under_100_gold", "category": "economy", "description": "Win with less than 100 gold remaining", "requirement": { "type": "win_low_gold", "maxGold": 100, "target": 1 }, "reward": { "coins": 50 } },
+    { "id": "build_5_turrets", "category": "economy", "description": "Build 5 turrets across all games today", "requirement": { "type": "turrets_built", "target": 5 }, "reward": { "coins": 30 } },
+    { "id": "spend_3000_gold", "category": "economy", "description": "Spend 3,000 gold across all games today", "requirement": { "type": "gold_spent", "target": 3000 }, "reward": { "coins": 30 } },
+    { "id": "kill_3_heroes", "category": "combat", "description": "Kill 3 enemy heroes today", "requirement": { "type": "hero_kills_daily", "target": 3 }, "reward": { "coins": 40 } },
+    { "id": "use_special_5_times", "category": "combat", "description": "Use Special abilities 5 times", "requirement": { "type": "special_uses", "target": 5 }, "reward": { "coins": 30 } },
+    { "id": "win_90_hp", "category": "combat", "description": "Win with your base above 90% HP", "requirement": { "type": "win_high_hp", "minHpPercent": 90, "target": 1 }, "reward": { "coins": 40 } },
+    { "id": "kill_100_enemies", "category": "combat", "description": "Kill 100 enemies across all games today", "requirement": { "type": "enemies_killed_daily", "target": 100 }, "reward": { "coins": 30 } },
+    { "id": "get_5_combos", "category": "combat", "description": "Get 5 kill combos (3+ kills)", "requirement": { "type": "combos", "target": 5 }, "reward": { "coins": 35 } },
+    { "id": "campaign_3_stars", "category": "mode", "description": "Complete a campaign mission with 3 stars", "requirement": { "type": "campaign_3star", "target": 1 }, "reward": { "coins": 40 } },
+    { "id": "reach_wave_25", "category": "mode", "description": "Reach wave 25 in Survival", "requirement": { "type": "survival_wave", "target": 25 }, "reward": { "coins": 40 } },
+    { "id": "play_3_games", "category": "mode", "description": "Play 3 games in any mode", "requirement": { "type": "games_played", "target": 3 }, "reward": { "coins": 25 } },
+    { "id": "win_2_games", "category": "mode", "description": "Win 2 games today", "requirement": { "type": "wins_daily", "target": 2 }, "reward": { "coins": 35 } },
+    { "id": "play_classic_and_survival", "category": "mode", "description": "Play both Classic and Survival modes", "requirement": { "type": "play_modes", "target": 2 }, "reward": { "coins": 30 } }
+  ],
+  "weeklyChallenges": [
+    { "id": "win_10_different_strats", "description": "Win 10 games this week using at least 3 different starting strategies", "requirement": { "type": "weekly_wins_varied", "target": 10 }, "reward": { "coins": 200, "cosmetic": "weekly_exclusive" } },
+    { "id": "earn_50000_gold_week", "description": "Earn 50,000 gold total this week", "requirement": { "type": "weekly_gold_earned", "target": 50000 }, "reward": { "coins": 200, "cosmetic": "weekly_exclusive" } },
+    { "id": "kill_500_enemies_week", "description": "Kill 500 enemies this week", "requirement": { "type": "weekly_kills", "target": 500 }, "reward": { "coins": 200, "cosmetic": "weekly_exclusive" } },
+    { "id": "complete_5_campaign_week", "description": "Complete 5 campaign missions this week", "requirement": { "type": "weekly_campaign", "target": 5 }, "reward": { "coins": 200, "cosmetic": "weekly_exclusive" } }
+  ]
+}
