@@ -117,6 +117,14 @@ export class HUD extends Phaser.Scene {
   // ── Hover tracking for unit buttons ──
   private hoveredButtonIndex: number = -1;
 
+  // ── Weather display ──
+  private weatherDisplayText!: Phaser.GameObjects.Text;
+
+  // ── Hero HP display ──
+  private heroHpText!: Phaser.GameObjects.Text;
+  private heroHpCurrent: number = 0;
+  private heroHpMax: number = 0;
+
   constructor() {
     super({ key: 'HUD' });
   }
@@ -166,6 +174,16 @@ export class HUD extends Phaser.Scene {
     this.ageText = this.add.text(width / 2, hpY, 'Prehistoric', {
       fontSize: '16px', fontFamily: 'monospace', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(2);
+
+    // ── Weather display (center-right) ──
+    this.weatherDisplayText = this.add.text(width / 2 + 120, hpY, 'Weather: Clear', {
+      fontSize: '11px', fontFamily: 'monospace', color: '#aaccff',
+    }).setOrigin(0, 0.5).setDepth(2);
+
+    // ── Hero HP display (to the right of weather) ──
+    this.heroHpText = this.add.text(width / 2 + 280, hpY, '', {
+      fontSize: '11px', fontFamily: 'monospace', color: '#ffd700',
+    }).setOrigin(0, 0.5).setDepth(2);
 
     // ── Enemy base HP bar (right) ──
     const eHpX = width - 112;
@@ -512,6 +530,32 @@ export class HUD extends Phaser.Scene {
    */
   flashPlayerHpBar(): void {
     this.playerHpFlashTimer = 0.3;
+  }
+
+  /**
+   * Update the weather text display in the top bar.
+   * Called by GameScene each frame.
+   */
+  updateWeatherText(weatherName: string): void {
+    if (this.weatherDisplayText) {
+      this.weatherDisplayText.setText(`Weather: ${weatherName}`);
+    }
+  }
+
+  /**
+   * Update the hero HP display in the top bar.
+   * Called by GameScene each frame.
+   */
+  updateHeroHp(current: number, max: number): void {
+    this.heroHpCurrent = current;
+    this.heroHpMax = max;
+    if (this.heroHpText) {
+      if (max > 0) {
+        this.heroHpText.setText(`Hero: ${Math.ceil(current)}/${max}`);
+      } else {
+        this.heroHpText.setText('Hero: DEAD');
+      }
+    }
   }
 
   /**

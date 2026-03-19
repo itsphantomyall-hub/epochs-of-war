@@ -1,0 +1,420 @@
+{
+  "continents": [
+    {
+      "name": "Pangaea",
+      "ageRange": [1, 2],
+      "missions": [
+        {
+          "id": 1,
+          "title": "First Contact",
+          "description": "Defeat a primitive tribe that guards the valley entrance.",
+          "type": "standard",
+          "difficulty": "easy",
+          "startAge": 1,
+          "enemyAI": "passive",
+          "modifiers": [],
+          "starThresholds": { "time": 180, "hpPercent": 75 },
+          "rewards": { "coins": 50 }
+        },
+        {
+          "id": 2,
+          "title": "River Crossing",
+          "description": "Defend your camp from waves of tribal raiders.",
+          "type": "defense",
+          "difficulty": "easy",
+          "startAge": 1,
+          "enemyAI": "rusher",
+          "modifiers": ["no_turrets"],
+          "waveCount": 5,
+          "starThresholds": { "time": 240, "hpPercent": 75 },
+          "rewards": { "coins": 75 }
+        },
+        {
+          "id": 3,
+          "title": "Raptor Ambush",
+          "description": "Destroy the enemy base before their raptor packs overrun you.",
+          "type": "rush",
+          "difficulty": "medium",
+          "startAge": 1,
+          "enemyAI": "rusher",
+          "modifiers": ["famine"],
+          "timeLimit": 120,
+          "starThresholds": { "time": 90, "hpPercent": 75 },
+          "rewards": { "coins": 100 }
+        },
+        {
+          "id": 4,
+          "title": "Stone Age Showdown",
+          "description": "A rival tribe has evolved. Match their strength and conquer.",
+          "type": "standard",
+          "difficulty": "medium",
+          "startAge": 1,
+          "enemyAI": "balanced",
+          "modifiers": ["locked_age"],
+          "lockedAge": 1,
+          "starThresholds": { "time": 200, "hpPercent": 75 },
+          "rewards": { "coins": 100 }
+        },
+        {
+          "id": 5,
+          "title": "The Titan Awakens",
+          "description": "Defeat the Titan -- a massive prehistoric beast that terrorizes the land.",
+          "type": "boss",
+          "difficulty": "hard",
+          "startAge": 2,
+          "enemyAI": "boss",
+          "boss": "titan",
+          "modifiers": [],
+          "starThresholds": { "time": 300, "hpPercent": 75 },
+          "rewards": { "coins": 200, "unlock": "skin_prehistoric_gold" }
+        }
+      ]
+    },
+    {
+      "name": "Mesopotamia",
+      "ageRange": [2, 3],
+      "missions": [
+        {
+          "id": 6,
+          "title": "Trade Route Assault",
+          "description": "Destroy the bandit fortress blocking the ancient trade routes.",
+          "type": "standard",
+          "difficulty": "easy",
+          "startAge": 2,
+          "enemyAI": "turtler",
+          "modifiers": [],
+          "starThresholds": { "time": 200, "hpPercent": 75 },
+          "rewards": { "coins": 75 }
+        },
+        {
+          "id": 7,
+          "title": "Siege of Ur",
+          "description": "Hold the city against relentless waves of invaders.",
+          "type": "defense",
+          "difficulty": "medium",
+          "startAge": 2,
+          "enemyAI": "rusher",
+          "modifiers": ["ironman"],
+          "waveCount": 8,
+          "starThresholds": { "time": 300, "hpPercent": 75 },
+          "rewards": { "coins": 100 }
+        },
+        {
+          "id": 8,
+          "title": "Chariot Blitz",
+          "description": "Use your chariots to overwhelm the enemy before they can fortify.",
+          "type": "rush",
+          "difficulty": "medium",
+          "startAge": 2,
+          "enemyAI": "turtler",
+          "modifiers": ["arms_race"],
+          "timeLimit": 150,
+          "starThresholds": { "time": 100, "hpPercent": 75 },
+          "rewards": { "coins": 100 }
+        },
+        {
+          "id": 9,
+          "title": "The Elephant's Path",
+          "description": "Use only the units given to you to break through enemy lines.",
+          "type": "puzzle",
+          "difficulty": "hard",
+          "startAge": 3,
+          "enemyAI": "balanced",
+          "modifiers": ["locked_age"],
+          "lockedAge": 3,
+          "starThresholds": { "time": 180, "hpPercent": 75 },
+          "rewards": { "coins": 125 }
+        },
+        {
+          "id": 10,
+          "title": "The Colossus Rises",
+          "description": "Defeat the Colossus -- a massive bronze automaton guarding the gates.",
+          "type": "boss",
+          "difficulty": "hard",
+          "startAge": 3,
+          "enemyAI": "boss",
+          "boss": "colossus",
+          "modifiers": [],
+          "starThresholds": { "time": 360, "hpPercent": 75 },
+          "rewards": { "coins": 250, "unlock": "skin_bronze_royal" }
+        }
+      ]
+    },
+    {
+      "name": "Olympus",
+      "ageRange": [3, 4],
+      "missions": [
+        {
+          "id": 11,
+          "title": "Spartan Stand",
+          "description": "Hold the pass against overwhelming enemy numbers.",
+          "type": "defense",
+          "difficulty": "medium",
+          "startAge": 3,
+          "enemyAI": "rusher",
+          "modifiers": ["locked_age", "no_turrets"],
+          "lockedAge": 3,
+          "waveCount": 10,
+          "starThresholds": { "time": 360, "hpPercent": 75 },
+          "rewards": { "coins": 100 }
+        },
+        {
+          "id": 12,
+          "title": "Phalanx Puzzle",
+          "description": "Position your phalanx formations perfectly to defeat a superior force.",
+          "type": "puzzle",
+          "difficulty": "hard",
+          "startAge": 3,
+          "enemyAI": "balanced",
+          "modifiers": ["ironman"],
+          "starThresholds": { "time": 150, "hpPercent": 75 },
+          "rewards": { "coins": 125 }
+        },
+        {
+          "id": 13,
+          "title": "March on Rome",
+          "description": "Destroy the Roman garrison before reinforcements arrive.",
+          "type": "rush",
+          "difficulty": "hard",
+          "startAge": 4,
+          "enemyAI": "turtler",
+          "modifiers": ["inflation"],
+          "timeLimit": 180,
+          "starThresholds": { "time": 120, "hpPercent": 75 },
+          "rewards": { "coins": 125 }
+        },
+        {
+          "id": 14,
+          "title": "Mirror of Athena",
+          "description": "The enemy mimics your every move. Outsmart your own reflection.",
+          "type": "standard",
+          "difficulty": "hard",
+          "startAge": 3,
+          "enemyAI": "balanced",
+          "modifiers": ["mirror_match"],
+          "starThresholds": { "time": 240, "hpPercent": 75 },
+          "rewards": { "coins": 150 }
+        },
+        {
+          "id": 15,
+          "title": "The Hydra's Lair",
+          "description": "Defeat the Hydra -- a multi-headed siege beast that regenerates.",
+          "type": "boss",
+          "difficulty": "hard",
+          "startAge": 4,
+          "enemyAI": "boss",
+          "boss": "hydra",
+          "modifiers": [],
+          "starThresholds": { "time": 360, "hpPercent": 75 },
+          "rewards": { "coins": 300, "unlock": "skin_classical_laurel" }
+        }
+      ]
+    },
+    {
+      "name": "Ironhold",
+      "ageRange": [4, 5],
+      "missions": [
+        {
+          "id": 16,
+          "title": "Castle Siege",
+          "description": "Storm the heavily fortified castle before the drawbridge closes forever.",
+          "type": "standard",
+          "difficulty": "medium",
+          "startAge": 4,
+          "enemyAI": "turtler",
+          "modifiers": ["double_agent"],
+          "starThresholds": { "time": 240, "hpPercent": 75 },
+          "rewards": { "coins": 125 }
+        },
+        {
+          "id": 17,
+          "title": "Famine's Grip",
+          "description": "No passive income. Kill enemies to fund your army or starve.",
+          "type": "standard",
+          "difficulty": "hard",
+          "startAge": 4,
+          "enemyAI": "balanced",
+          "modifiers": ["famine"],
+          "starThresholds": { "time": 300, "hpPercent": 75 },
+          "rewards": { "coins": 150 }
+        },
+        {
+          "id": 18,
+          "title": "The Shrinking Field",
+          "description": "The battlefield collapses inward. Adapt or be crushed.",
+          "type": "defense",
+          "difficulty": "hard",
+          "startAge": 5,
+          "enemyAI": "rusher",
+          "modifiers": ["scorched_earth"],
+          "waveCount": 12,
+          "starThresholds": { "time": 360, "hpPercent": 75 },
+          "rewards": { "coins": 150 }
+        },
+        {
+          "id": 19,
+          "title": "Gunpowder Dawn",
+          "description": "A standard battle in the new age of gunpowder warfare.",
+          "type": "standard",
+          "difficulty": "medium",
+          "startAge": 5,
+          "enemyAI": "balanced",
+          "modifiers": ["fog_of_war"],
+          "starThresholds": { "time": 240, "hpPercent": 75 },
+          "rewards": { "coins": 125 }
+        },
+        {
+          "id": 20,
+          "title": "The Cannon King",
+          "description": "Defeat the Cannon King -- a massive mobile fortress bristling with artillery.",
+          "type": "boss",
+          "difficulty": "hard",
+          "startAge": 5,
+          "enemyAI": "boss",
+          "boss": "cannon_king",
+          "modifiers": [],
+          "starThresholds": { "time": 420, "hpPercent": 75 },
+          "rewards": { "coins": 350, "unlock": "skin_medieval_iron" }
+        }
+      ]
+    },
+    {
+      "name": "Nova Terra",
+      "ageRange": [5, 7],
+      "missions": [
+        {
+          "id": 21,
+          "title": "Industrial Revolution",
+          "description": "Overwhelm the factory district and seize control of production.",
+          "type": "standard",
+          "difficulty": "medium",
+          "startAge": 6,
+          "enemyAI": "turtler",
+          "modifiers": ["arms_race"],
+          "starThresholds": { "time": 300, "hpPercent": 75 },
+          "rewards": { "coins": 150 }
+        },
+        {
+          "id": 22,
+          "title": "Trench Warfare",
+          "description": "Survive relentless waves in the trenches with no room to retreat.",
+          "type": "defense",
+          "difficulty": "hard",
+          "startAge": 6,
+          "enemyAI": "rusher",
+          "modifiers": ["no_turrets", "famine"],
+          "waveCount": 15,
+          "starThresholds": { "time": 420, "hpPercent": 75 },
+          "rewards": { "coins": 175 }
+        },
+        {
+          "id": 23,
+          "title": "Blitzkrieg",
+          "description": "Launch a devastating rush before the enemy can mobilize their full army.",
+          "type": "rush",
+          "difficulty": "hard",
+          "startAge": 7,
+          "enemyAI": "turtler",
+          "modifiers": ["inflation"],
+          "timeLimit": 180,
+          "starThresholds": { "time": 120, "hpPercent": 75 },
+          "rewards": { "coins": 175 }
+        },
+        {
+          "id": 24,
+          "title": "Tank Commander",
+          "description": "Use only the armored division provided to break through enemy defenses.",
+          "type": "puzzle",
+          "difficulty": "hard",
+          "startAge": 7,
+          "enemyAI": "balanced",
+          "modifiers": ["ironman", "locked_age"],
+          "lockedAge": 7,
+          "starThresholds": { "time": 240, "hpPercent": 75 },
+          "rewards": { "coins": 200 }
+        },
+        {
+          "id": 25,
+          "title": "The Leviathan",
+          "description": "Defeat the Leviathan War Machine -- an autonomous AI-controlled war platform.",
+          "type": "boss",
+          "difficulty": "hard",
+          "startAge": 7,
+          "enemyAI": "boss",
+          "boss": "leviathan",
+          "modifiers": [],
+          "starThresholds": { "time": 480, "hpPercent": 75 },
+          "rewards": { "coins": 400, "unlock": "skin_modern_stealth" }
+        }
+      ]
+    },
+    {
+      "name": "Singularity",
+      "ageRange": [7, 8],
+      "missions": [
+        {
+          "id": 26,
+          "title": "Digital Frontier",
+          "description": "Battle through the enemy's cyber-enhanced defenses.",
+          "type": "standard",
+          "difficulty": "hard",
+          "startAge": 7,
+          "enemyAI": "balanced",
+          "modifiers": ["double_agent", "fog_of_war"],
+          "starThresholds": { "time": 300, "hpPercent": 75 },
+          "rewards": { "coins": 200 }
+        },
+        {
+          "id": 27,
+          "title": "Drone Apocalypse",
+          "description": "Defend against an endless swarm of AI-controlled drones.",
+          "type": "defense",
+          "difficulty": "hard",
+          "startAge": 8,
+          "enemyAI": "rusher",
+          "modifiers": ["scorched_earth"],
+          "waveCount": 18,
+          "starThresholds": { "time": 480, "hpPercent": 75 },
+          "rewards": { "coins": 225 }
+        },
+        {
+          "id": 28,
+          "title": "Singularity Rush",
+          "description": "Destroy the enemy core before the AI achieves true sentience.",
+          "type": "standard",
+          "difficulty": "hard",
+          "startAge": 8,
+          "enemyAI": "balanced",
+          "modifiers": ["mirror_match", "inflation"],
+          "starThresholds": { "time": 240, "hpPercent": 75 },
+          "rewards": { "coins": 250 }
+        },
+        {
+          "id": 29,
+          "title": "Last Stand",
+          "description": "All systems failing. Hold the line with everything you have.",
+          "type": "standard",
+          "difficulty": "hard",
+          "startAge": 8,
+          "enemyAI": "rusher",
+          "modifiers": ["famine", "no_turrets", "ironman"],
+          "starThresholds": { "time": 300, "hpPercent": 75 },
+          "rewards": { "coins": 250 }
+        },
+        {
+          "id": 30,
+          "title": "The Omega Construct",
+          "description": "Defeat the Omega Construct -- a sentient AI that adapts to your every strategy.",
+          "type": "boss",
+          "difficulty": "hard",
+          "startAge": 8,
+          "enemyAI": "boss",
+          "boss": "omega",
+          "modifiers": [],
+          "starThresholds": { "time": 600, "hpPercent": 75 },
+          "rewards": { "coins": 500, "unlock": "skin_future_omega" }
+        }
+      ]
+    }
+  ]
+}

@@ -14,6 +14,30 @@ import type { Faction } from '../core/components/Faction';
 import type { Renderable } from '../core/components/Renderable';
 import type { UnitType as UnitTypeComponent } from '../core/components/UnitType';
 import type { UnitType } from '../types/Unit';
+import type { Health } from '../core/components/Health';
+import type { HeroComponent } from '../core/components/Hero';
+
+// Phase 3 imports
+import { HeroManager, HeroConfigMap } from '../core/managers/HeroManager';
+import { TechTreeManager, TechTreeConfig } from '../core/managers/TechTreeManager';
+import { TerrainManager, TerrainConfigMap } from '../core/managers/TerrainManager';
+import { TurretManager, TurretConfigMap } from '../core/managers/TurretManager';
+import { HeroSystem } from '../core/systems/HeroSystem';
+import { TerrainSystem } from '../core/systems/TerrainSystem';
+import { WeatherSystem, WeatherFile } from '../core/systems/WeatherSystem';
+import { FormationSystem } from '../core/systems/FormationSystem';
+import { TurretSystem } from '../core/systems/TurretSystem';
+import { AbilitySystem, AbilityConfigMap } from '../core/systems/AbilitySystem';
+import { LifetimeSystem } from '../core/systems/LifetimeSystem';
+import { AIDirector, Difficulty } from '../ai/AIDirector';
+
+// Config JSON imports
+import heroesJson from '../config/heroes.json';
+import techtreeJson from '../config/techtree.json';
+import terrainJson from '../config/terrain.json';
+import weatherJson from '../config/weather.json';
+import turretsJson from '../config/turrets.json';
+import abilitiesJson from '../config/abilities.json';
 
 /**
  * Size (w, h) per unit archetype used for placeholder rectangles.
@@ -59,6 +83,36 @@ export class GameScene extends Phaser.Scene {
   private enemyEconomy!: EconomySystem;
   private playerAgeSystem!: AgeSystem;
   private enemyAgeSystem!: AgeSystem;
+
+  // ── Phase 3 systems & managers ──
+  private heroManager!: HeroManager;
+  private heroSystem!: HeroSystem;
+  private techTreeManager!: TechTreeManager;
+  private terrainManager!: TerrainManager;
+  private terrainSystem!: TerrainSystem;
+  private weatherSystem!: WeatherSystem;
+  private formationSystem!: FormationSystem;
+  private playerTurretManager!: TurretManager;
+  private enemyTurretManager!: TurretManager;
+  private turretSystem!: TurretSystem;
+  private abilitySystem!: AbilitySystem;
+  private lifetimeSystem!: LifetimeSystem;
+  private aiDirector!: AIDirector;
+
+  // ── Terrain zone visuals ──
+  private terrainZoneGraphics: Phaser.GameObjects.Graphics[] = [];
+  private terrainZoneLabels: Phaser.GameObjects.Text[] = [];
+
+  // ── Weather overlay ──
+  private weatherOverlay!: Phaser.GameObjects.Graphics;
+  private weatherText!: Phaser.GameObjects.Text;
+
+  // ── Turret visuals ──
+  private turretRects: Map<number, Phaser.GameObjects.Rectangle> = new Map();
+
+  // ── Hero visual ──
+  private heroRect: Phaser.GameObjects.Rectangle | null = null;
+  private heroEntityId: number | null = null;
 
   // ── State ──
   private gameState!: GameState;
@@ -170,6 +224,99 @@ export class GameScene extends Phaser.Scene {
     this.gameManager.setPlayerBaseHp(this.gameState.player.baseHp);
     this.gameManager.setEnemyBaseHp(this.gameState.enemy.baseHp);
 
+    // ── Phase 3: Hero Manager + Hero System ──
+    const heroConfigs = (heroesJson as unknown as { heroes: HeroConfigMap }).heroes;
+    this.heroManager = new HeroManager(
+      this.gameManager.world,
+      this.gameManager.spatialGrid,
+      heroConfigs,
+    );
+    this.heroSystem = new HeroSystem(
+      this.gameManager.spatialGrid,
+      this.gameManager.events,
+      this.heroManager,
+    );
+    this.heroSystem.setWorldRef(this.gameManager.world);
+
+    // ── Phase 3: Tech Tree Manager ──
+    this.techTreeManager = new TechTreeManager(techtreeJson as TechTreeConfig);
+
+    // ── Phase 3: Terrain Manager + Terrain System ──
+    const terrainConfigs = (terrainJson as { terrains: TerrainConfigMap }).terrains;
+    this.terrainManager = new TerrainManager(
+      this.gameManager.world,
+      terrainConfigs,
+    );
+    this.terrainSystem = new TerrainSystem(this.terrainManager);
+
+    // Generate random terrain for this match
+    this.terrainManager.generateTerrain();
+
+    // ── Phase 3: Weather System ──
+    this.weatherSystem = new WeatherSystem(
+      this.gameManager.events,
+      weatherJson as WeatherFile,
+    );
+
+    // ── Phase 3: Formation System ──
+    this.formationSystem = new FormationSystem();
+
+    // ── Phase 3: Turret Manager + Turret System ──
+    const turretConfigs = (turretsJson as { turrets: TurretConfigMap }).turrets;
+    this.playerTurretManager = new TurretManager(
+      this.gameManager.world,
+      this.gameManager.spatialGrid,
+      this.playerEconomy,
+      'player',
+      turretConfigs,
+    );
+    this.enemyTurretManager = new TurretManager(
+      this.gameManager.world,
+      this.gameManager.spatialGrid,
+      this.enemyEconomy,
+      'enemy',
+      turretConfigs,
+    );
+    this.turretSystem = new TurretSystem(
+      this.gameManager.spatialGrid,
+      this.gameManager.events,
+    );
+
+    // ── Phase 3: Ability System + Lifetime System ──
+    const abilityConfigs = (abilitiesJson as { abilities: AbilityConfigMap }).abilities;
+    this.abilitySystem = new AbilitySystem(
+      this.gameManager.spatialGrid,
+      this.gameManager.events,
+      abilityConfigs,
+    );
+    this.lifetimeSystem = new LifetimeSystem();
+
+    // ── Phase 3: AI Director (replaces simple enemy AI) ──
+    this.aiDirector = new AIDirector(
+      this.gameManager.world,
+      this.gameManager.spatialGrid,
+      this.enemyEconomy,
+      this.enemyAgeSystem,
+      this.abilitySystem,
+      this.enemyTurretManager,
+      this.gameManager.spawnSystem,
+      this.configLoader,
+      this.difficulty as Difficulty,
+    );
+
+    // ── Deploy initial hero (age 1) for player ──
+    this.heroEntityId = this.heroManager.deployHero('player', 1);
+
+    // ── Auto-build one turret in slot 0 at game start ──
+    const age1TurretIds = this.playerAgeSystem.getAvailableTurretIds();
+    const antiInfantryTurret = age1TurretIds.find((id) => {
+      const cfg = this.playerTurretManager.getTurretConfig(id);
+      return cfg && cfg.category === 'anti_infantry';
+    }) ?? age1TurretIds[0];
+    if (antiInfantryTurret) {
+      this.playerTurretManager.buildTurret(0, antiInfantryTurret);
+    }
+
     // ── Wire ECS events ──
     this.wireEvents();
 
@@ -189,6 +336,15 @@ export class GameScene extends Phaser.Scene {
     this.createBases();
     this.createBattleLine();
     this.createLowHpOverlay();
+
+    // Render terrain zones
+    this.createTerrainZones();
+
+    // Weather overlay + text
+    this.createWeatherOverlay();
+
+    // Render initial turrets
+    this.renderTurrets();
 
     // Floating text manager
     this.floatingText = new FloatingTextManager(this);
@@ -249,6 +405,8 @@ export class GameScene extends Phaser.Scene {
         if (this.comboCount >= 3) {
           this.showComboText(this.comboCount);
         }
+        // Reduce ability cooldown on kill
+        this.abilitySystem.onKill('player');
       } else if (e.faction === 'player') {
         // Enemy killed a player unit — enemy earns rewards
         this.enemyEconomy.earnFromKill(
@@ -265,6 +423,23 @@ export class GameScene extends Phaser.Scene {
             0x4488ff,
             1
           );
+        }
+
+        // Reduce ability cooldown on kill for enemy
+        this.abilitySystem.onKill('enemy');
+      }
+
+      // Check if dead entity is the player hero
+      if (e.unitType === 'hero') {
+        if (e.faction === 'player') {
+          this.heroManager.onHeroDeath('player');
+          this.heroEntityId = null;
+          if (this.heroRect) {
+            this.heroRect.destroy();
+            this.heroRect = null;
+          }
+        } else {
+          this.heroManager.onHeroDeath('enemy');
         }
       }
     });
@@ -752,14 +927,32 @@ export class GameScene extends Phaser.Scene {
       this.trySpecial();
     }
 
-    // Hero abilities
+    // Hero abilities (1/2 keys)
     if (Phaser.Input.Keyboard.JustDown(this.keys.ONE)) {
-      const hud = this.scene.get('HUD') as HUD | undefined;
-      hud?.startHeroCooldown(0, 10);
+      const used = this.heroSystem.useAbility(this.gameManager.world, 'player', 0);
+      if (used) {
+        const heroId = this.heroManager.getHero('player');
+        if (heroId !== null) {
+          const hero = this.gameManager.world.getComponent<HeroComponent>(heroId, 'Hero');
+          if (hero) {
+            const hud = this.scene.get('HUD') as HUD | undefined;
+            hud?.startHeroCooldown(0, hero.ability1MaxCooldown);
+          }
+        }
+      }
     }
     if (Phaser.Input.Keyboard.JustDown(this.keys.TWO)) {
-      const hud = this.scene.get('HUD') as HUD | undefined;
-      hud?.startHeroCooldown(1, 15);
+      const used = this.heroSystem.useAbility(this.gameManager.world, 'player', 1);
+      if (used) {
+        const heroId = this.heroManager.getHero('player');
+        if (heroId !== null) {
+          const hero = this.gameManager.world.getComponent<HeroComponent>(heroId, 'Hero');
+          if (hero) {
+            const hud = this.scene.get('HUD') as HUD | undefined;
+            hud?.startHeroCooldown(1, hero.ability2MaxCooldown);
+          }
+        }
+      }
     }
 
     // Pause
@@ -775,7 +968,7 @@ export class GameScene extends Phaser.Scene {
       ? this.playerAgeSystem.getCurrentAge()
       : this.enemyAgeSystem.getCurrentAge();
 
-    const req: SpawnRequest = {
+    let req: SpawnRequest = {
       faction,
       unitId,
       type: unitConfig.type,
@@ -791,6 +984,11 @@ export class GameScene extends Phaser.Scene {
       cost: unitConfig.stats.cost,
     };
 
+    // Apply tech tree effects to player spawns
+    if (faction === 'player') {
+      req = this.techTreeManager.applyEffects(req);
+    }
+
     this.gameManager.spawnSystem.enqueue(req);
   }
 
@@ -801,7 +999,11 @@ export class GameScene extends Phaser.Scene {
       const newAgeConfig = this.playerAgeSystem.evolve();
       if (newAgeConfig) {
         // Update base HP
-        const newBaseHp = this.playerAgeSystem.getBaseHp();
+        let newBaseHp = this.playerAgeSystem.getBaseHp();
+
+        // Apply tech tree base HP bonus (Fortification T1: Thick Walls)
+        newBaseHp = Math.round(newBaseHp * this.techTreeManager.getBaseHpBonus());
+
         const hpGain = newBaseHp - this.gameState.player.baseMaxHp;
         this.gameState.player.baseMaxHp = newBaseHp;
         this.gameState.player.baseHp = Math.min(
@@ -814,12 +1016,43 @@ export class GameScene extends Phaser.Scene {
         // Sync age in game state
         this.gameState.player.currentAge = this.playerAgeSystem.getCurrentAge();
 
+        // ── Tech Tree: award 2 points and auto-spend ──
+        this.techTreeManager.addPoints(2);
+        // Auto-spend: 1 in Military, 1 in Economy (default strategy)
+        const milTier = this.techTreeManager.getUnlockedTier('military') + 1;
+        if (this.techTreeManager.canUnlock('military', milTier)) {
+          this.techTreeManager.unlock('military', milTier);
+        }
+        const ecoTier = this.techTreeManager.getUnlockedTier('economy') + 1;
+        if (this.techTreeManager.canUnlock('economy', ecoTier)) {
+          this.techTreeManager.unlock('economy', ecoTier);
+        }
+        // If couldn't spend in those branches, try fortification
+        if (this.techTreeManager.getAvailablePoints() > 0) {
+          const fortTier = this.techTreeManager.getUnlockedTier('fortification') + 1;
+          if (this.techTreeManager.canUnlock('fortification', fortTier)) {
+            this.techTreeManager.unlock('fortification', fortTier);
+          }
+        }
+
+        // Apply evolution gold bonus from tech tree (War Bonds)
+        const evolveGoldBonus = this.techTreeManager.getEvolutionGoldBonus();
+        if (evolveGoldBonus > 0) {
+          this.playerEconomy.addGold(evolveGoldBonus);
+        }
+
+        // ── Deploy new hero for the new age ──
+        this.heroEntityId = this.heroManager.onAgeUp('player', this.playerAgeSystem.getCurrentAge());
+
         // Update HUD unit buttons for new age
         this.pushUnitDefsToHUD();
 
         // Play evolution transition instead of simple flash
         const ageName = AGE_NAMES[this.gameState.player.currentAge] ?? `Age ${this.gameState.player.currentAge}`;
         this.playEvolutionTransition(ageName);
+
+        // Update weather system max age
+        this.weatherSystem.setMaxAge(this.playerAgeSystem.getCurrentAge());
 
         // Emit ageUp event
         this.gameManager.events.emit('ageUp', {
@@ -831,32 +1064,36 @@ export class GameScene extends Phaser.Scene {
   }
 
   private trySpecial(): void {
+    // Use the AbilitySystem instead of the simple damage-all approach
+    const targetX = this.input.activePointer?.worldX
+      ? this.screenToEcsX(this.input.activePointer.worldX)
+      : 800; // battlefield center
+
+    const used = this.abilitySystem.useSpecial(
+      this.gameManager.world,
+      'player',
+      this.playerAgeSystem.getCurrentAge(),
+      targetX,
+    );
+
+    if (!used) return;
+
+    const abilityConfig = this.abilitySystem.getAbilityForAge(this.playerAgeSystem.getCurrentAge());
+    const cooldown = abilityConfig?.cooldown ?? 45;
+
     const hud = this.scene.get('HUD') as HUD | undefined;
-    hud?.startSpecialCooldown(30);
+    hud?.startSpecialCooldown(cooldown);
 
     // Screen shake for special attack
     if (this.screenShakeEnabled) {
       this.cameras.main.shake(300, 0.008);
     }
+  }
 
-    // Damage all enemy units in the ECS world
-    const combatants = this.gameManager.world.query('Position', 'Faction', 'Health');
-    for (const id of combatants) {
-      const faction = this.gameManager.world.getComponent<Faction>(id, 'Faction');
-      if (faction && faction.faction === 'enemy') {
-        const health = this.gameManager.world.getComponent<{ current: number; max: number }>(id, 'Health');
-        if (health) {
-          health.current -= 50;
-          const pos = this.gameManager.world.getComponent<Position>(id, 'Position');
-          if (pos) {
-            const screenX = this.ecsXToScreen(pos.x);
-            this.floatingText.spawnDamage(screenX, GameScene.GROUND_Y - 20, 50);
-            // Sparks on each hit unit
-            this.particles.spawnSparks(screenX, GameScene.GROUND_Y - 20);
-          }
-        }
-      }
-    }
+  /** Convert screen X back to ECS X for targeting. */
+  private screenToEcsX(screenX: number): number {
+    const t = (screenX - GameScene.PLAYER_BASE_X) / (GameScene.ENEMY_BASE_X - GameScene.PLAYER_BASE_X);
+    return 50 + t * (1550 - 50);
   }
 
   private togglePause(): void {
@@ -977,19 +1214,66 @@ export class GameScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     if (this.gameState.isPaused || this.gameState.isGameOver) return;
 
-    this.handleInput();
-
     const deltaSec = delta / 1000;
 
     // Update elapsed time
     this.gameState.elapsedTime += deltaSec;
 
-    // Run the ECS update loop (Spawn → Movement → Combat → Health → Cleanup)
+    // ── Section 16.1 System Update Order ──
+    // 1. Input
+    this.handleInput();
+
+    // 2. AI — use AIDirector instead of simple updateEnemyAI
+    this.aiDirector.update(deltaSec);
+
+    // 3. Spawn → Movement → Combat (via GameManager core loop)
     this.gameManager.update(deltaSec);
 
-    // Update economy systems (passive income)
+    // 6. Terrain
+    this.terrainSystem.update(this.gameManager.world, deltaSec);
+
+    // 7. Weather
+    this.weatherSystem.update(this.gameManager.world, deltaSec);
+
+    // 8. Formation
+    this.formationSystem.update(this.gameManager.world, deltaSec);
+
+    // 9. Hero
+    this.heroSystem.updateWithDelta(this.gameManager.world, deltaSec);
+
+    // 10. Ability
+    this.abilitySystem.update(this.gameManager.world, deltaSec);
+
+    // 11. Lifetime
+    this.lifetimeSystem.update(this.gameManager.world, deltaSec);
+
+    // 12. Turret
+    this.turretSystem.update(this.gameManager.world, deltaSec);
+
+    // 13. Economy (passive income + tech bonuses)
     this.playerEconomy.update(deltaSec);
     this.enemyEconomy.update(deltaSec);
+
+    // Apply tech tree income bonus (Trade Routes: +5 gold/s)
+    const incomeBonus = this.techTreeManager.getIncomeBonus();
+    if (incomeBonus > 0) {
+      this.playerEconomy.addGold(incomeBonus * deltaSec);
+    }
+
+    // Apply tech tree base regen (Repair Crews: 1 HP/s)
+    const regenRate = this.techTreeManager.getBaseRegenRate();
+    if (regenRate > 0 && this.gameState.player.baseHp < this.gameState.player.baseMaxHp) {
+      this.gameState.player.baseHp = Math.min(
+        this.gameState.player.baseMaxHp,
+        this.gameState.player.baseHp + regenRate * deltaSec,
+      );
+      this.gameManager.setPlayerBaseHp(this.gameState.player.baseHp);
+    }
+
+    // Update weather max age
+    this.weatherSystem.setMaxAge(
+      Math.max(this.playerAgeSystem.getCurrentAge(), this.enemyAgeSystem.getCurrentAge()),
+    );
 
     // Sync economy → gameState
     this.gameState.player.gold = this.playerEconomy.getRawGold();
@@ -1025,11 +1309,11 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // Enemy AI
-    this.updateEnemyAI(time);
-
-    // Render ECS entities
+    // ── Render ──
     this.renderEntities();
+    this.renderHero();
+    this.renderTurrets();
+    this.updateWeatherOverlay();
 
     // Update visual effects
     this.updateClouds(deltaSec);
@@ -1041,7 +1325,9 @@ export class GameScene extends Phaser.Scene {
     // Update particles
     this.particles.update(deltaSec);
 
-    // Sync game state for HUD
+    // Sync game state for HUD — include hero HP and weather info
+    this.syncHeroHpToHUD();
+    this.syncWeatherToHUD();
     this.data.set('gameState', this.gameState);
 
     // Update floating text
@@ -1163,6 +1449,169 @@ export class GameScene extends Phaser.Scene {
       if (!aliveIds.has(entityId)) {
         rect.destroy();
         this.entityRects.delete(entityId);
+      }
+    }
+  }
+
+  // ─────────────────────── PHASE 3: TERRAIN ZONES ───────────────────────
+
+  private static readonly TERRAIN_COLORS: Record<string, { color: number; alpha: number }> = {
+    river: { color: 0x4488ff, alpha: 0.15 },
+    forest: { color: 0x44aa44, alpha: 0.15 },
+    high_ground: { color: 0x886644, alpha: 0.15 },
+    ruins: { color: 0x888888, alpha: 0.15 },
+    bridge: { color: 0xff8844, alpha: 0.2 },
+  };
+
+  private createTerrainZones(): void {
+    const zones = this.terrainManager.getActiveZones();
+    for (const zone of zones) {
+      const screenXStart = this.ecsXToScreen(zone.xStart);
+      const screenXEnd = this.ecsXToScreen(zone.xEnd);
+      const width = screenXEnd - screenXStart;
+      const centerX = (screenXStart + screenXEnd) / 2;
+      const height = 80; // zone height on screen
+      const y = GameScene.GROUND_Y - height / 2;
+
+      const style = GameScene.TERRAIN_COLORS[zone.terrainId] ?? { color: 0xaaaaaa, alpha: 0.1 };
+
+      const gfx = this.add.graphics().setDepth(-5);
+      if (zone.terrainId === 'bridge') {
+        // Bridge: outline only
+        gfx.lineStyle(2, style.color, style.alpha);
+        gfx.strokeRect(screenXStart, GameScene.GROUND_Y - height, width, height);
+      } else {
+        gfx.fillStyle(style.color, style.alpha);
+        gfx.fillRect(screenXStart, GameScene.GROUND_Y - height, width, height);
+      }
+      this.terrainZoneGraphics.push(gfx);
+
+      // Terrain name label
+      const label = this.add.text(centerX, y - 6, zone.config.name, {
+        fontSize: '10px',
+        fontFamily: 'monospace',
+        color: '#ffffff',
+      }).setOrigin(0.5).setDepth(-4).setAlpha(0.5);
+      this.terrainZoneLabels.push(label);
+    }
+  }
+
+  // ─────────────────────── PHASE 3: WEATHER OVERLAY ───────────────────────
+
+  private createWeatherOverlay(): void {
+    this.weatherOverlay = this.add.graphics().setDepth(8900);
+    this.weatherOverlay.setVisible(false);
+
+    this.weatherText = this.add.text(0, 0, '', {
+      fontSize: '11px',
+      fontFamily: 'monospace',
+      color: '#cccccc',
+    }).setDepth(10).setAlpha(0.8);
+  }
+
+  private updateWeatherOverlay(): void {
+    const weather = this.weatherSystem.getCurrentWeather();
+
+    this.weatherOverlay.clear();
+
+    if (weather.currentWeather === 'rain') {
+      this.weatherOverlay.setVisible(true);
+      this.weatherOverlay.fillStyle(0x4488ff, 0.05);
+      this.weatherOverlay.fillRect(0, 0, 1280, 720);
+    } else if (weather.currentWeather === 'fog') {
+      this.weatherOverlay.setVisible(true);
+      this.weatherOverlay.fillStyle(0xffffff, 0.15);
+      this.weatherOverlay.fillRect(0, 0, 1280, 720);
+    } else if (weather.currentWeather === 'sandstorm') {
+      this.weatherOverlay.setVisible(true);
+      this.weatherOverlay.fillStyle(0xaa8844, 0.1);
+      this.weatherOverlay.fillRect(0, 0, 1280, 720);
+    } else {
+      this.weatherOverlay.setVisible(false);
+    }
+  }
+
+  private syncWeatherToHUD(): void {
+    const weather = this.weatherSystem.getCurrentWeather();
+    const hud = this.scene.get('HUD') as HUD | undefined;
+    if (hud && (hud as any).updateWeatherText) {
+      (hud as any).updateWeatherText(weather.weatherName);
+    }
+  }
+
+  // ─────────────────────── PHASE 3: HERO RENDERING ───────────────────────
+
+  private renderHero(): void {
+    const heroId = this.heroManager.getHero('player');
+    if (heroId === null || !this.gameManager.world.isAlive(heroId)) {
+      if (this.heroRect) {
+        this.heroRect.setVisible(false);
+      }
+      return;
+    }
+
+    const pos = this.gameManager.world.getComponent<Position>(heroId, 'Position');
+    if (!pos) return;
+
+    const screenX = this.ecsXToScreen(pos.x);
+    const screenY = GameScene.GROUND_Y - 20; // 40/2
+
+    if (!this.heroRect) {
+      this.heroRect = this.add.rectangle(screenX, screenY, 32, 40, 0x4488ff)
+        .setStrokeStyle(2, 0xffd700) // gold border
+        .setDepth(6);
+    } else {
+      this.heroRect.setPosition(screenX, screenY);
+      this.heroRect.setVisible(true);
+    }
+  }
+
+  private syncHeroHpToHUD(): void {
+    const heroId = this.heroManager.getHero('player');
+    const hud = this.scene.get('HUD') as HUD | undefined;
+    if (!hud) return;
+
+    if (heroId !== null && this.gameManager.world.isAlive(heroId)) {
+      const health = this.gameManager.world.getComponent<Health>(heroId, 'Health');
+      if (health && (hud as any).updateHeroHp) {
+        (hud as any).updateHeroHp(health.current, health.max);
+      }
+    } else {
+      if ((hud as any).updateHeroHp) {
+        (hud as any).updateHeroHp(0, 0);
+      }
+    }
+  }
+
+  // ─────────────────────── PHASE 3: TURRET RENDERING ───────────────────────
+
+  private renderTurrets(): void {
+    // Clean up old rects for turrets that no longer exist
+    for (const [entityId, rect] of this.turretRects) {
+      if (!this.gameManager.world.isAlive(entityId)) {
+        rect.destroy();
+        this.turretRects.delete(entityId);
+      }
+    }
+
+    // Render player turrets
+    const occupiedSlots = this.playerTurretManager.getOccupiedSlots();
+    for (const slot of occupiedSlots) {
+      const turretInfo = this.playerTurretManager.getTurretInSlot(slot);
+      if (!turretInfo) continue;
+
+      const pos = this.playerTurretManager.getSlotPosition(slot);
+      const screenX = this.ecsXToScreen(pos.x);
+      const screenY = GameScene.GROUND_Y - 20;
+
+      let rect = this.turretRects.get(turretInfo.entityId);
+      if (!rect) {
+        rect = this.add.rectangle(screenX, screenY, 16, 16, 0x44aaff)
+          .setStrokeStyle(1, 0xffffff)
+          .setDepth(4);
+        this.turretRects.set(turretInfo.entityId, rect);
+      } else {
+        rect.setPosition(screenX, screenY);
       }
     }
   }

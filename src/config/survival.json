@@ -1,0 +1,261 @@
+{
+  "waveScaling": {
+    "baseUnits": 3,
+    "unitsPerWave": 1.5,
+    "hpMultiplierPerWave": 0.03,
+    "dmgMultiplierPerWave": 0.02,
+    "waveInterval": 30,
+    "minInterval": 15,
+    "intervalDecreasePerWave": 0.3
+  },
+  "ageProgression": [5, 10, 15, 20, 25, 30, 35],
+  "buffs": {
+    "offensive": [
+      {
+        "id": "sharpened_blades",
+        "name": "Sharpened Blades",
+        "description": "All melee damage +15%",
+        "rarity": "common",
+        "category": "offensive",
+        "effect": { "type": "melee_damage", "value": 1.15 }
+      },
+      {
+        "id": "incendiary_rounds",
+        "name": "Incendiary Rounds",
+        "description": "Ranged attacks apply 3 DPS burn for 3s",
+        "rarity": "common",
+        "category": "offensive",
+        "effect": { "type": "ranged_burn", "dps": 3, "duration": 3 }
+      },
+      {
+        "id": "berserker_blood",
+        "name": "Berserker Blood",
+        "description": "Units below 30% HP deal +50% damage",
+        "rarity": "common",
+        "category": "offensive",
+        "effect": { "type": "berserker", "hpThreshold": 0.3, "damageBonus": 1.5 }
+      },
+      {
+        "id": "rapid_deployment",
+        "name": "Rapid Deployment",
+        "description": "Spawn time -20%",
+        "rarity": "common",
+        "category": "offensive",
+        "effect": { "type": "spawn_time", "value": 0.8 }
+      },
+      {
+        "id": "critical_strike",
+        "name": "Critical Strike",
+        "description": "10% chance for any attack to deal 2x damage",
+        "rarity": "common",
+        "category": "offensive",
+        "effect": { "type": "crit_chance", "chance": 0.1, "multiplier": 2.0 }
+      },
+      {
+        "id": "bloodlust",
+        "name": "Bloodlust",
+        "description": "Killing an enemy heals the killer for 10% HP",
+        "rarity": "common",
+        "category": "offensive",
+        "effect": { "type": "lifesteal_on_kill", "value": 0.1 }
+      },
+      {
+        "id": "piercing_shots",
+        "name": "Piercing Shots",
+        "description": "Ranged attacks pierce through 1 additional target",
+        "rarity": "common",
+        "category": "offensive",
+        "effect": { "type": "pierce", "extraTargets": 1 }
+      },
+      {
+        "id": "fury_of_the_ages",
+        "name": "Fury of the Ages",
+        "description": "Special ability charges 30% faster",
+        "rarity": "common",
+        "category": "offensive",
+        "effect": { "type": "special_cooldown", "value": 0.7 }
+      }
+    ],
+    "defensive": [
+      {
+        "id": "iron_constitution",
+        "name": "Iron Constitution",
+        "description": "All units gain +20% HP",
+        "rarity": "common",
+        "category": "defensive",
+        "effect": { "type": "hp_bonus", "value": 1.2 }
+      },
+      {
+        "id": "healing_aura",
+        "name": "Healing Aura",
+        "description": "All units regenerate 1 HP/second",
+        "rarity": "common",
+        "category": "defensive",
+        "effect": { "type": "regen", "value": 1 }
+      },
+      {
+        "id": "fortified_walls",
+        "name": "Fortified Walls",
+        "description": "Base HP +500",
+        "rarity": "common",
+        "category": "defensive",
+        "effect": { "type": "base_hp", "value": 500 }
+      },
+      {
+        "id": "shield_matrix",
+        "name": "Shield Matrix",
+        "description": "15% chance to dodge any attack",
+        "rarity": "common",
+        "category": "defensive",
+        "effect": { "type": "dodge", "chance": 0.15 }
+      },
+      {
+        "id": "thorns",
+        "name": "Thorns",
+        "description": "Attackers take 10% of damage dealt back",
+        "rarity": "common",
+        "category": "defensive",
+        "effect": { "type": "thorns", "value": 0.1 }
+      },
+      {
+        "id": "emergency_repairs",
+        "name": "Emergency Repairs",
+        "description": "Base heals 100 HP between waves",
+        "rarity": "common",
+        "category": "defensive",
+        "effect": { "type": "base_heal", "value": 100 }
+      },
+      {
+        "id": "ablative_armor",
+        "name": "Ablative Armor",
+        "description": "First hit on each unit deals 50% less damage",
+        "rarity": "common",
+        "category": "defensive",
+        "effect": { "type": "first_hit_reduction", "value": 0.5 }
+      },
+      {
+        "id": "guardian_angel",
+        "name": "Guardian Angel",
+        "description": "Once per wave, a random unit survives with 1 HP instead of dying",
+        "rarity": "common",
+        "category": "defensive",
+        "effect": { "type": "death_save", "charges": 1 }
+      }
+    ],
+    "economy": [
+      {
+        "id": "gold_rush",
+        "name": "Gold Rush",
+        "description": "+50% gold from kills",
+        "rarity": "common",
+        "category": "economy",
+        "effect": { "type": "kill_gold_bonus", "value": 1.5 }
+      },
+      {
+        "id": "bounty_hunter",
+        "name": "Bounty Hunter",
+        "description": "Elite enemies drop 3x gold",
+        "rarity": "common",
+        "category": "economy",
+        "effect": { "type": "elite_gold_bonus", "value": 3.0 }
+      },
+      {
+        "id": "interest",
+        "name": "Interest",
+        "description": "Earn 5% interest on unspent gold between waves",
+        "rarity": "common",
+        "category": "economy",
+        "effect": { "type": "interest", "value": 0.05 }
+      },
+      {
+        "id": "scavenger",
+        "name": "Scavenger",
+        "description": "Dead enemies leave gold pickups on the battlefield",
+        "rarity": "common",
+        "category": "economy",
+        "effect": { "type": "gold_drops", "value": 5 }
+      },
+      {
+        "id": "war_profiteer",
+        "name": "War Profiteer",
+        "description": "Turret kills give double gold",
+        "rarity": "common",
+        "category": "economy",
+        "effect": { "type": "turret_kill_gold", "value": 2.0 }
+      },
+      {
+        "id": "age_accelerator",
+        "name": "Age Accelerator",
+        "description": "XP required for next age -20%",
+        "rarity": "common",
+        "category": "economy",
+        "effect": { "type": "xp_reduction", "value": 0.8 }
+      },
+      {
+        "id": "merchant",
+        "name": "Merchant",
+        "description": "Can sell units for 50% of their cost",
+        "rarity": "common",
+        "category": "economy",
+        "effect": { "type": "sell_units", "value": 0.5 }
+      },
+      {
+        "id": "jackpot",
+        "name": "Jackpot",
+        "description": "5% chance any kill drops 10x gold",
+        "rarity": "common",
+        "category": "economy",
+        "effect": { "type": "jackpot", "chance": 0.05, "multiplier": 10 }
+      }
+    ],
+    "legendary": [
+      {
+        "id": "time_warp",
+        "name": "Time Warp",
+        "description": "All units gain +30% attack speed",
+        "rarity": "legendary",
+        "category": "legendary",
+        "effect": { "type": "attack_speed", "value": 1.3 }
+      },
+      {
+        "id": "meteor_insurance",
+        "name": "Meteor Insurance",
+        "description": "Special ability hits twice",
+        "rarity": "legendary",
+        "category": "legendary",
+        "effect": { "type": "double_special", "value": 2 }
+      },
+      {
+        "id": "immortal_hero",
+        "name": "Immortal Hero",
+        "description": "Hero respawns after 15 seconds instead of staying dead",
+        "rarity": "legendary",
+        "category": "legendary",
+        "effect": { "type": "hero_respawn", "cooldown": 15 }
+      },
+      {
+        "id": "dimensional_rift",
+        "name": "Dimensional Rift",
+        "description": "20% chance spawned units are duplicated for free",
+        "rarity": "legendary",
+        "category": "legendary",
+        "effect": { "type": "free_duplicate", "chance": 0.2 }
+      },
+      {
+        "id": "singularity_core",
+        "name": "Singularity Core",
+        "description": "All damage dealt by all sources +10% (stacks!)",
+        "rarity": "legendary",
+        "category": "legendary",
+        "effect": { "type": "global_damage", "value": 1.1 }
+      }
+    ]
+  },
+  "milestones": [
+    { "wave": 10, "title": "Survivor", "reward": "badge_bronze" },
+    { "wave": 25, "title": "Warrior", "reward": "badge_silver" },
+    { "wave": 50, "title": "Legend", "reward": "badge_gold" },
+    { "wave": 75, "title": "Immortal", "reward": "badge_diamond" },
+    { "wave": 100, "title": "Eternal", "reward": "badge_eternal" }
+  ]
+}
