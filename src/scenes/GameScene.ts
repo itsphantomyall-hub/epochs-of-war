@@ -9,6 +9,7 @@ import { EconomySystem } from '../core/systems/EconomySystem';
 import { AgeSystem } from '../core/systems/AgeSystem';
 import { SpawnRequest } from '../core/systems/SpawnSystem';
 import { ParticleManager } from '../rendering/ParticleManager';
+import { JuiceManager } from '../rendering/JuiceManager';
 import { ProceduralSpriteFactory } from '../rendering/ProceduralSpriteFactory';
 import { BaseRenderer } from '../rendering/BaseRenderer';
 import { TurretRenderer } from '../rendering/TurretRenderer';
@@ -140,8 +141,9 @@ export class GameScene extends Phaser.Scene {
   private gameState!: GameState;
   private floatingText!: FloatingTextManager;
 
-  // ── Particles ──
+  // ── Particles & Juice ──
   private particles!: ParticleManager;
+  private juice!: JuiceManager;
 
   // ── Procedural renderers ──
   private spriteFactory!: ProceduralSpriteFactory;
@@ -182,15 +184,8 @@ export class GameScene extends Phaser.Scene {
   // ── Battle line indicator ──
   private battleLine!: Phaser.GameObjects.Rectangle;
 
-  // ── Screen effects ──
+  // ── Screen effects (delegated to JuiceManager) ──
   public screenShakeEnabled: boolean = true;
-  private lowHpOverlay!: Phaser.GameObjects.Graphics;
-  private lowHpPulseTimer: number = 0;
-
-  // ── Kill combo ──
-  private comboCount: number = 0;
-  private comboTimer: number = 0;
-  private comboText: Phaser.GameObjects.Text | null = null;
 
   // ── Previous gold (for HUD flash) ──
   private lastPlayerGold: number = 0;
@@ -378,6 +373,22 @@ export class GameScene extends Phaser.Scene {
     // ── Particle manager ──
     this.particles = new ParticleManager(this);
 
+    // ── Juice manager (hit-stop, screen shake, combos, evolution cinematic, low HP) ──
+    this.juice = new JuiceManager(this);
+    this.juice.shakeEnabled = this.screenShakeEnabled;
+    // Wire particle callbacks so JuiceManager can trigger effects without circular deps
+    this.juice.onSpawnGoldParticles = (x, y) => {
+      for (let i = 0; i < 5; i++) {
+        this.particles.spawnMagicBurst(x + (Math.random() - 0.5) * 20, y, 0xFFD700);
+      }
+    };
+    this.juice.onSpawnCelebrationParticles = (x, y) => {
+      this.particles.spawnEvolutionCelebration(x, y);
+    };
+    this.juice.onSpawnComboParticles = (x, y) => {
+      this.particles.spawnMagicBurst(x, y, 0xFFD700);
+    };
+
     // Show initial background
     this.backgroundRenderer.showAge(1);
     this.lastRenderedPlayerAge = 1;
@@ -389,7 +400,7 @@ export class GameScene extends Phaser.Scene {
     this.createClouds();
     this.createBases();
     this.createBattleLine();
-    this.createLowHpOverlay();
+    this.juice.createLowHpOverlay();
 
     // Render terrain zones
     this.createTerrainZones();
@@ -410,10 +421,8 @@ export class GameScene extends Phaser.Scene {
     this.lastPlayerGold = this.gameState.player.gold;
     this.lastPlayerBaseHp = this.gameState.player.baseHp;
 
-    // Reset combo state
-    this.comboCount = 0;
-    this.comboTimer = 0;
-    this.comboText = null;
+    // Reset combo state in juice manager
+    this.juice.resetCombo();
 
     // Launch HUD overlay scene
     this.scene.launch('HUD');
@@ -442,23 +451,27 @@ export class GameScene extends Phaser.Scene {
           const screenY = GameScene.GROUND_Y - 30;
           this.floatingText.spawnGold(screenX, screenY, reward.gold);
 
-          // Death explosion particles
+          // Death particles — choose effect by unit type
           const archetype = e.unitType ?? 'infantry';
-          const isHeavy = archetype === 'heavy' || archetype === 'hero';
-          this.particles.spawnExplosion(screenX, screenY, 0xff4444, isHeavy ? 1.5 : 1);
-
-          // Screen shake for heavy units
-          if (isHeavy && this.screenShakeEnabled) {
-            this.cameras.main.shake(200, 0.005);
+          if (archetype === 'heavy' || archetype === 'hero') {
+            // Heavy/hero: large explosion + screen shake + hit-stop
+            this.particles.spawnLargeExplosion(screenX, screenY);
+            this.juice.shakeForDeath(archetype);
+            this.juice.hitStopHeavyDeath();
+          } else if (archetype === 'special') {
+            // Special: medium explosion + medium shake
+            this.particles.spawnSmallExplosion(screenX, screenY);
+            this.juice.shakeForDeath(archetype);
+          } else {
+            // Infantry/ranged: small blood splash, no shake
+            this.particles.spawnBloodSplash(screenX, screenY, 1);
+            this.particles.spawnDustCloud(screenX, GameScene.GROUND_Y);
           }
         }
 
-        // Kill combo tracking
-        this.comboCount++;
-        this.comboTimer = 3;
-        if (this.comboCount >= 3) {
-          this.showComboText(this.comboCount);
-        }
+        // Kill combo tracking via JuiceManager
+        this.juice.recordKill();
+
         // Reduce ability cooldown on kill
         this.abilitySystem.onKill('player');
       } else if (e.faction === 'player') {
@@ -468,15 +481,18 @@ export class GameScene extends Phaser.Scene {
           this.playerAgeSystem.getCurrentAge()
         );
 
-        // Player unit death particles (blue)
+        // Player unit death particles (blue-tinted)
         const pos = this.gameManager.world.getComponent<Position>(e.entityId, 'Position');
         if (pos) {
-          this.particles.spawnExplosion(
-            this.ecsXToScreen(pos.x),
-            GameScene.GROUND_Y - 30,
-            0x4488ff,
-            1
-          );
+          const screenX = this.ecsXToScreen(pos.x);
+          const screenY = GameScene.GROUND_Y - 30;
+          const archetype = e.unitType ?? 'infantry';
+          if (archetype === 'heavy' || archetype === 'hero') {
+            this.particles.spawnLargeExplosion(screenX, screenY);
+          } else {
+            this.particles.spawnSmallExplosion(screenX, screenY);
+          }
+          this.particles.spawnDustCloud(screenX, GameScene.GROUND_Y);
         }
 
         // Reduce ability cooldown on kill for enemy
@@ -498,20 +514,54 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
-    // Damage events: show floating damage numbers + hit particles
+    // Damage events: show floating damage numbers + context-appropriate hit particles
     this.gameManager.events.on('damage', (e) => {
       const pos = this.gameManager.world.getComponent<Position>(e.targetId, 'Position');
-      if (pos) {
-        const screenX = this.ecsXToScreen(pos.x);
-        const screenY = GameScene.GROUND_Y - 20;
-        this.floatingText.spawnDamage(screenX, screenY, e.damage);
+      if (!pos) return;
 
-        // Determine hit type for particles
-        if (e.damage > 20) {
-          this.particles.spawnBloodSplash(screenX, screenY);
-        } else {
-          this.particles.spawnSparks(screenX, screenY);
+      const screenX = this.ecsXToScreen(pos.x);
+      const screenY = GameScene.GROUND_Y - 20;
+      this.floatingText.spawnDamage(screenX, screenY, e.damage);
+
+      // Determine attacker type/position for directional effects
+      const attackerPos = this.gameManager.world.getComponent<Position>(e.attackerId, 'Position');
+      const attackerFaction = this.gameManager.world.getComponent<Faction>(e.attackerId, 'Faction');
+      const attackerUnitType = this.gameManager.world.getComponent<UnitTypeComponent>(e.attackerId, 'UnitType');
+      const attackerArchetype = attackerUnitType?.type ?? 'infantry';
+      const direction = attackerFaction?.faction === 'player' ? 1 : -1;
+
+      // Choose particle effect based on attacker type
+      if (attackerArchetype === 'ranged') {
+        // Ranged hit: sparks flying upward
+        this.particles.spawnRangedImpact(screenX, screenY);
+        // Gunpowder+ ages: muzzle flash at attacker position
+        const attackerAge = attackerFaction?.faction === 'player'
+          ? this.playerAgeSystem.getCurrentAge()
+          : this.enemyAgeSystem.getCurrentAge();
+        if (attackerAge >= 5 && attackerPos) {
+          this.particles.spawnMuzzleFlash(
+            this.ecsXToScreen(attackerPos.x),
+            GameScene.GROUND_Y - 20,
+            direction
+          );
+          // Industrial+ ages: smoke trail
+          if (attackerAge >= 6) {
+            this.particles.spawnSmokeTrail(screenX, screenY);
+          }
         }
+      } else if (attackerArchetype === 'special') {
+        // Special unit hit: small explosion
+        this.particles.spawnSmallExplosion(screenX, screenY);
+      } else if (e.damage > 20) {
+        // Heavy melee hit: blood splash with direction bias
+        this.particles.spawnBloodSplash(screenX, screenY, direction);
+      } else {
+        // Normal melee hit: white + accent sparks
+        const age = attackerFaction?.faction === 'player'
+          ? this.playerAgeSystem.getCurrentAge()
+          : this.enemyAgeSystem.getCurrentAge();
+        const accentColor = this.getAgeAccentColor(age);
+        this.particles.spawnMeleeHit(screenX, screenY, accentColor);
       }
     });
 
@@ -524,6 +574,19 @@ export class GameScene extends Phaser.Scene {
         hud?.flashPlayerHpBar();
       } else {
         this.gameState.enemy.baseHp = Math.max(0, e.remainingHp);
+      }
+
+      // Juice: hit-stop and screen shake for base hits
+      this.juice.hitStopBaseHit();
+      this.juice.shakeForBaseHit(e.damage);
+
+      // Particles at base position
+      const baseX = e.faction === 'player' ? GameScene.PLAYER_BASE_X : GameScene.ENEMY_BASE_X;
+      const baseY = GameScene.GROUND_Y - 40;
+      if (e.damage > 30) {
+        this.particles.spawnSmallExplosion(baseX, baseY);
+      } else {
+        this.particles.spawnRangedImpact(baseX, baseY);
       }
     });
 
@@ -539,6 +602,21 @@ export class GameScene extends Phaser.Scene {
         this.playBaseCollapse('player');
       }
     });
+  }
+
+  /** Get age accent color for particle tinting. */
+  private getAgeAccentColor(age: number): number {
+    const accentColors: Record<number, number> = {
+      1: 0xFF6B35,  // Prehistoric: volcanic orange
+      2: 0xF1C40F,  // Bronze: golden
+      3: 0xC41E3A,  // Classical: roman red
+      4: 0xDAA520,  // Medieval: heraldic gold
+      5: 0xECF0F1,  // Gunpowder: powder white
+      6: 0xD4A017,  // Industrial: amber
+      7: 0xFF4500,  // Modern: warning orange
+      8: 0x00CED1,  // Future: neon cyan
+    };
+    return accentColors[age] ?? 0xffffff;
   }
 
   // ─────────────────────── COORDINATE MAPPING ───────────────────────
@@ -686,11 +764,6 @@ export class GameScene extends Phaser.Scene {
       .setDepth(3);
   }
 
-  private createLowHpOverlay(): void {
-    this.lowHpOverlay = this.add.graphics().setDepth(9000);
-    this.lowHpOverlay.setVisible(false);
-  }
-
   // ─────────────────────── BASE DAMAGE VISUALS ───────────────────────
 
   private updateBaseCracks(): void {
@@ -780,13 +853,12 @@ export class GameScene extends Phaser.Scene {
     pole.setVisible(false);
     if (damageImg) damageImg.setVisible(false);
 
-    // Spawn collapse particles
-    this.particles.spawnCollapse(baseX, baseY, color, 12);
-    this.particles.spawnExplosion(baseX, baseY, color, 2);
+    // Spawn collapse particles — use upgraded effects
+    this.particles.spawnBaseDebris(baseX, baseY, color);
+    this.particles.spawnLargeExplosion(baseX, baseY);
 
-    if (this.screenShakeEnabled) {
-      this.cameras.main.shake(400, 0.01);
-    }
+    // Sustained heavy shake for 1.5s
+    this.juice.shakeBaseDestroyed();
 
     // Show end screen after collapse animation
     this.time.delayedCall(1500, () => {
@@ -800,117 +872,22 @@ export class GameScene extends Phaser.Scene {
 
   // ─────────────────────── SCREEN EFFECTS ───────────────────────
 
-  private showComboText(count: number): void {
-    if (this.comboText) {
-      this.comboText.destroy();
-    }
-    this.comboText = this.add.text(640, 300, `COMBO x${count}!`, {
-      fontSize: '32px',
-      fontFamily: 'monospace',
-      color: '#ffdd00',
-      fontStyle: 'bold',
-      stroke: '#000000',
-      strokeThickness: 4,
-    }).setOrigin(0.5).setDepth(8000).setAlpha(0);
-
-    this.tweens.add({
-      targets: this.comboText,
-      alpha: { from: 0, to: 1 },
-      scaleX: { from: 0.5, to: 1.2 },
-      scaleY: { from: 0.5, to: 1.2 },
-      duration: 300,
-      ease: 'Back.easeOut',
-      yoyo: true,
-      hold: 400,
-      onComplete: () => {
-        if (this.comboText) {
-          this.comboText.destroy();
-          this.comboText = null;
-        }
-      },
-    });
-  }
-
-  private updateLowHpOverlay(): void {
-    const hpPct = this.gameState.player.baseMaxHp > 0
-      ? this.gameState.player.baseHp / this.gameState.player.baseMaxHp
-      : 1;
-
-    if (hpPct < 0.25 && hpPct > 0) {
-      this.lowHpOverlay.setVisible(true);
-      this.lowHpPulseTimer += 0.03;
-      const alpha = 0.1 + 0.1 * Math.sin(this.lowHpPulseTimer * 4);
-      this.lowHpOverlay.clear();
-      this.lowHpOverlay.fillStyle(0xff0000, alpha);
-
-      // Vignette border (draw rectangles around edges)
-      const borderW = 40;
-      const borderH = 30;
-      // Top
-      this.lowHpOverlay.fillRect(0, 0, 1280, borderH);
-      // Bottom
-      this.lowHpOverlay.fillRect(0, 720 - borderH, 1280, borderH);
-      // Left
-      this.lowHpOverlay.fillRect(0, 0, borderW, 720);
-      // Right
-      this.lowHpOverlay.fillRect(1280 - borderW, 0, borderW, 720);
-    } else {
-      this.lowHpOverlay.setVisible(false);
-    }
-  }
-
   private playEvolutionTransition(ageName: string): void {
-    // 1. Camera flash white
-    this.cameras.main.flash(500, 255, 255, 200);
+    // Delegate to JuiceManager for the full 3-second cinematic sequence
+    const baseY = GameScene.GROUND_Y - 40;
+    this.juice.playEvolutionCinematic(ageName, GameScene.PLAYER_BASE_X, baseY);
 
-    // 2. Magic particles at base
-    this.particles.spawnMagic(
+    // Also fire initial magic burst particles immediately
+    this.particles.spawnMagicBurst(
       GameScene.PLAYER_BASE_X,
-      GameScene.GROUND_Y - 40,
+      baseY,
       0x8844ff
     );
-    this.particles.spawnMagic(
+    this.particles.spawnMagicBurst(
       GameScene.PLAYER_BASE_X,
-      GameScene.GROUND_Y - 40,
+      baseY,
       0xffdd00
     );
-
-    // 3. Brief camera zoom
-    this.tweens.add({
-      targets: this.cameras.main,
-      zoom: 1.1,
-      duration: 300,
-      ease: 'Sine.easeInOut',
-      yoyo: true,
-    });
-
-    // 4. Age name text fade in/out
-    const ageNameText = this.add.text(640, 280, ageName, {
-      fontSize: '48px',
-      fontFamily: 'monospace',
-      color: '#ffdd00',
-      fontStyle: 'bold',
-      stroke: '#000000',
-      strokeThickness: 6,
-    }).setOrigin(0.5).setDepth(8500).setAlpha(0);
-
-    this.tweens.add({
-      targets: ageNameText,
-      alpha: { from: 0, to: 1 },
-      y: { from: 300, to: 270 },
-      duration: 500,
-      ease: 'Sine.easeOut',
-      yoyo: true,
-      hold: 1000,
-      onComplete: () => {
-        ageNameText.destroy();
-      },
-    });
-
-    // Screen shake
-    if (this.screenShakeEnabled) {
-      this.cameras.main.shake(200, 0.003);
-    }
   }
 
   // ─────────────────────── INPUT ───────────────────────
@@ -996,6 +973,15 @@ export class GameScene extends Phaser.Scene {
             const hud = this.scene.get('HUD') as HUD | undefined;
             hud?.startHeroCooldown(0, hero.ability1MaxCooldown);
           }
+          // Hero ability juice: hit-stop + magic burst at hero position
+          const pos = this.gameManager.world.getComponent<Position>(heroId, 'Position');
+          if (pos) {
+            const sx = this.ecsXToScreen(pos.x);
+            const sy = GameScene.GROUND_Y - 20;
+            this.juice.hitStopHeroAbility();
+            this.juice.shakeMedium();
+            this.particles.spawnMagicBurst(sx, sy, this.getAgeAccentColor(this.playerAgeSystem.getCurrentAge()));
+          }
         }
       }
     }
@@ -1008,6 +994,15 @@ export class GameScene extends Phaser.Scene {
           if (hero) {
             const hud = this.scene.get('HUD') as HUD | undefined;
             hud?.startHeroCooldown(1, hero.ability2MaxCooldown);
+          }
+          // Hero ability juice
+          const pos = this.gameManager.world.getComponent<Position>(heroId, 'Position');
+          if (pos) {
+            const sx = this.ecsXToScreen(pos.x);
+            const sy = GameScene.GROUND_Y - 20;
+            this.juice.hitStopHeroAbility();
+            this.juice.shakeMedium();
+            this.particles.spawnMagicBurst(sx, sy, this.getAgeAccentColor(this.playerAgeSystem.getCurrentAge()));
           }
         }
       }
@@ -1142,10 +1137,13 @@ export class GameScene extends Phaser.Scene {
     const hud = this.scene.get('HUD') as HUD | undefined;
     hud?.startSpecialCooldown(cooldown);
 
-    // Screen shake for special attack
-    if (this.screenShakeEnabled) {
-      this.cameras.main.shake(300, 0.008);
-    }
+    // Screen shake + hit-stop for special attack
+    this.juice.shakeMedium();
+    this.juice.hitStopSpecialAbility();
+
+    // Explosion particles at target location
+    const screenTargetX = this.input.activePointer?.worldX ?? 640;
+    this.particles.spawnLargeExplosion(screenTargetX, GameScene.GROUND_Y - 20);
   }
 
   /** Convert screen X back to ECS X for targeting. */
@@ -1277,94 +1275,92 @@ export class GameScene extends Phaser.Scene {
     // Update elapsed time
     this.gameState.elapsedTime += deltaSec;
 
-    // ── Section 16.1 System Update Order ──
-    // 1. Input
+    // ── JuiceManager update — returns true if systems should be skipped
+    //    (hit-stop freeze or evolution cinematic playing) ──
+    const skipSystems = this.juice.update(deltaSec);
+
+    // Always handle input (even during hit-stop, for responsiveness)
     this.handleInput();
 
-    // 2. AI — use AIDirector instead of simple updateEnemyAI
-    this.aiDirector.update(deltaSec);
+    // ── Game systems — only run when not hit-stopped/evolution-playing ──
+    if (!skipSystems) {
+      // 2. AI — use AIDirector instead of simple updateEnemyAI
+      this.aiDirector.update(deltaSec);
 
-    // 3. Spawn → Movement → Combat (via GameManager core loop)
-    this.gameManager.update(deltaSec);
+      // 3. Spawn → Movement → Combat (via GameManager core loop)
+      this.gameManager.update(deltaSec);
 
-    // 6. Terrain
-    this.terrainSystem.update(this.gameManager.world, deltaSec);
+      // 6. Terrain
+      this.terrainSystem.update(this.gameManager.world, deltaSec);
 
-    // 7. Weather
-    this.weatherSystem.update(this.gameManager.world, deltaSec);
+      // 7. Weather
+      this.weatherSystem.update(this.gameManager.world, deltaSec);
 
-    // 8. Formation
-    this.formationSystem.update(this.gameManager.world, deltaSec);
+      // 8. Formation
+      this.formationSystem.update(this.gameManager.world, deltaSec);
 
-    // 9. Hero
-    this.heroSystem.updateWithDelta(this.gameManager.world, deltaSec);
+      // 9. Hero
+      this.heroSystem.updateWithDelta(this.gameManager.world, deltaSec);
 
-    // 10. Ability
-    this.abilitySystem.update(this.gameManager.world, deltaSec);
+      // 10. Ability
+      this.abilitySystem.update(this.gameManager.world, deltaSec);
 
-    // 11. Lifetime
-    this.lifetimeSystem.update(this.gameManager.world, deltaSec);
+      // 11. Lifetime
+      this.lifetimeSystem.update(this.gameManager.world, deltaSec);
 
-    // 12. Turret
-    this.turretSystem.update(this.gameManager.world, deltaSec);
+      // 12. Turret
+      this.turretSystem.update(this.gameManager.world, deltaSec);
 
-    // 13. Economy (passive income + tech bonuses)
-    this.playerEconomy.update(deltaSec);
-    this.enemyEconomy.update(deltaSec);
+      // 13. Economy (passive income + tech bonuses)
+      this.playerEconomy.update(deltaSec);
+      this.enemyEconomy.update(deltaSec);
 
-    // Apply tech tree income bonus (Trade Routes: +5 gold/s)
-    const incomeBonus = this.techTreeManager.getIncomeBonus();
-    if (incomeBonus > 0) {
-      this.playerEconomy.addGold(incomeBonus * deltaSec);
-    }
-
-    // Apply tech tree base regen (Repair Crews: 1 HP/s)
-    const regenRate = this.techTreeManager.getBaseRegenRate();
-    if (regenRate > 0 && this.gameState.player.baseHp < this.gameState.player.baseMaxHp) {
-      this.gameState.player.baseHp = Math.min(
-        this.gameState.player.baseMaxHp,
-        this.gameState.player.baseHp + regenRate * deltaSec,
-      );
-      this.gameManager.setPlayerBaseHp(this.gameState.player.baseHp);
-    }
-
-    // Update weather max age
-    this.weatherSystem.setMaxAge(
-      Math.max(this.playerAgeSystem.getCurrentAge(), this.enemyAgeSystem.getCurrentAge()),
-    );
-
-    // Sync economy → gameState
-    this.gameState.player.gold = this.playerEconomy.getRawGold();
-    this.gameState.player.xp = this.playerEconomy.getXP();
-    this.gameState.player.currentAge = this.playerAgeSystem.getCurrentAge();
-
-    this.gameState.enemy.gold = this.enemyEconomy.getRawGold();
-    this.gameState.enemy.xp = this.enemyEconomy.getXP();
-    this.gameState.enemy.currentAge = this.enemyAgeSystem.getCurrentAge();
-
-    // Detect gold increase for HUD flash
-    if (this.gameState.player.gold > this.lastPlayerGold + 0.5) {
-      const hud = this.scene.get('HUD') as HUD | undefined;
-      hud?.flashGoldText();
-    }
-    this.lastPlayerGold = this.gameState.player.gold;
-
-    // Sync base HP from GameManager (it is the authoritative source for base damage)
-    const newPlayerBaseHp = Math.max(0, this.gameManager.playerBaseHp);
-    if (newPlayerBaseHp < this.lastPlayerBaseHp) {
-      const hud = this.scene.get('HUD') as HUD | undefined;
-      hud?.flashPlayerHpBar();
-    }
-    this.gameState.player.baseHp = newPlayerBaseHp;
-    this.lastPlayerBaseHp = newPlayerBaseHp;
-    this.gameState.enemy.baseHp = Math.max(0, this.gameManager.enemyBaseHp);
-
-    // Kill combo timer
-    if (this.comboTimer > 0) {
-      this.comboTimer -= deltaSec;
-      if (this.comboTimer <= 0) {
-        this.comboCount = 0;
+      // Apply tech tree income bonus (Trade Routes: +5 gold/s)
+      const incomeBonus = this.techTreeManager.getIncomeBonus();
+      if (incomeBonus > 0) {
+        this.playerEconomy.addGold(incomeBonus * deltaSec);
       }
+
+      // Apply tech tree base regen (Repair Crews: 1 HP/s)
+      const regenRate = this.techTreeManager.getBaseRegenRate();
+      if (regenRate > 0 && this.gameState.player.baseHp < this.gameState.player.baseMaxHp) {
+        this.gameState.player.baseHp = Math.min(
+          this.gameState.player.baseMaxHp,
+          this.gameState.player.baseHp + regenRate * deltaSec,
+        );
+        this.gameManager.setPlayerBaseHp(this.gameState.player.baseHp);
+      }
+
+      // Update weather max age
+      this.weatherSystem.setMaxAge(
+        Math.max(this.playerAgeSystem.getCurrentAge(), this.enemyAgeSystem.getCurrentAge()),
+      );
+
+      // Sync economy → gameState
+      this.gameState.player.gold = this.playerEconomy.getRawGold();
+      this.gameState.player.xp = this.playerEconomy.getXP();
+      this.gameState.player.currentAge = this.playerAgeSystem.getCurrentAge();
+
+      this.gameState.enemy.gold = this.enemyEconomy.getRawGold();
+      this.gameState.enemy.xp = this.enemyEconomy.getXP();
+      this.gameState.enemy.currentAge = this.enemyAgeSystem.getCurrentAge();
+
+      // Detect gold increase for HUD flash
+      if (this.gameState.player.gold > this.lastPlayerGold + 0.5) {
+        const hud = this.scene.get('HUD') as HUD | undefined;
+        hud?.flashGoldText();
+      }
+      this.lastPlayerGold = this.gameState.player.gold;
+
+      // Sync base HP from GameManager (it is the authoritative source for base damage)
+      const newPlayerBaseHp = Math.max(0, this.gameManager.playerBaseHp);
+      if (newPlayerBaseHp < this.lastPlayerBaseHp) {
+        const hud = this.scene.get('HUD') as HUD | undefined;
+        hud?.flashPlayerHpBar();
+      }
+      this.gameState.player.baseHp = newPlayerBaseHp;
+      this.lastPlayerBaseHp = newPlayerBaseHp;
+      this.gameState.enemy.baseHp = Math.max(0, this.gameManager.enemyBaseHp);
     }
 
     // ── Update background/bases on age change ──
@@ -1389,7 +1385,7 @@ export class GameScene extends Phaser.Scene {
       this.lastRenderedEnemyAge = currentEnemyAge;
     }
 
-    // ── Render ──
+    // ── Render (always runs, even during hit-stop, for visual feedback) ──
     this.renderEntities();
     this.renderHero();
     this.renderTurrets();
@@ -1401,7 +1397,12 @@ export class GameScene extends Phaser.Scene {
     this.updateFlags(time);
     this.updateBaseCracks();
     this.updateBattleLine();
-    this.updateLowHpOverlay();
+
+    // Low HP warning via JuiceManager
+    const hpPct = this.gameState.player.baseMaxHp > 0
+      ? this.gameState.player.baseHp / this.gameState.player.baseMaxHp
+      : 1;
+    this.juice.updateLowHpWarning(hpPct, deltaSec);
 
     // Update particles
     this.particles.update(deltaSec);
@@ -1875,8 +1876,9 @@ export class GameScene extends Phaser.Scene {
       }
       this.turretImages.clear();
 
-      // Clean up particles
+      // Clean up particles and juice
       this.particles.destroy();
+      this.juice.destroy();
 
       this.scene.stop('HUD');
       this.scene.start('MainMenuScene');

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GameState, createInitialGameState } from '../types/GameState';
 import { ConfigLoader } from '../utils/ConfigLoader';
+import { ProceduralSpriteFactory } from '../rendering/ProceduralSpriteFactory';
 
 /** Data shape for unit button definitions pushed from GameScene. */
 export interface UnitDef {
@@ -19,6 +20,7 @@ interface UnitButton {
   costText: Phaser.GameObjects.Text;
   keyText: Phaser.GameObjects.Text;
   cooldownOverlay: Phaser.GameObjects.Rectangle;
+  spriteIcon: Phaser.GameObjects.Image | null;
   index: number;
 }
 
@@ -108,6 +110,18 @@ export class HUD extends Phaser.Scene {
     6: 'Industrial',
     7: 'Modern',
     8: 'Future',
+  };
+
+  // ── Age accent colors for HUD theming ──
+  private static readonly AGE_COLORS: Record<number, { bar: number; text: string }> = {
+    1: { bar: 0x8B7355, text: '#B89968' },
+    2: { bar: 0xCD7F32, text: '#CD7F32' },
+    3: { bar: 0xF0E68C, text: '#F0E68C' },
+    4: { bar: 0x708090, text: '#A0B0C0' },
+    5: { bar: 0x8B0000, text: '#CC4444' },
+    6: { bar: 0x4A4A4A, text: '#888888' },
+    7: { bar: 0x556B2F, text: '#88AA66' },
+    8: { bar: 0x00CED1, text: '#44FFFF' },
   };
 
   // ── Evolve pulse state ──
@@ -248,7 +262,7 @@ export class HUD extends Phaser.Scene {
         .setOrigin(0.5, 1)
         .setDepth(3);
 
-      this.unitButtons.push({ bg, nameText, costText, keyText, cooldownOverlay, index: i });
+      this.unitButtons.push({ bg, nameText, costText, keyText, cooldownOverlay, spriteIcon: null, index: i });
     }
 
     // ── EVOLVE button ──
@@ -365,9 +379,13 @@ export class HUD extends Phaser.Scene {
       this.xpGlowTimer = 0;
     }
 
-    // Age name
+    // Age name with age-themed color
     const ageName = HUD.AGE_NAMES[player.currentAge] ?? `Age ${player.currentAge}`;
     this.ageText.setText(ageName);
+    const ageTheme = HUD.AGE_COLORS[player.currentAge];
+    if (ageTheme) {
+      this.ageText.setColor(ageTheme.text);
+    }
 
     // Evolve readiness
     this.evolveReady = player.xp >= xpToNext && player.currentAge < 8;
@@ -570,13 +588,29 @@ export class HUD extends Phaser.Scene {
       this.unitDefs.push({ name: '---', cost: 0, key: ['Q', 'W', 'E', 'R'][this.unitDefs.length] });
     }
 
-    // Update existing button text objects
+    // Update existing button text objects and sprite icons
     for (let i = 0; i < this.unitButtons.length; i++) {
       const btn = this.unitButtons[i];
       const def = this.unitDefs[i];
       btn.nameText.setText(def.name);
       btn.costText.setText(`$${def.cost}`);
       btn.keyText.setText(`[${def.key}]`);
+
+      // Show unit sprite icon thumbnail
+      if (btn.spriteIcon) {
+        btn.spriteIcon.destroy();
+        btn.spriteIcon = null;
+      }
+      if (def.unitId) {
+        const textureKey = `unit_${def.unitId}_player`;
+        if (this.textures.exists(textureKey)) {
+          const btnX = btn.bg.x;
+          const btnY = btn.bg.y;
+          btn.spriteIcon = this.add.image(btnX - 30, btnY, textureKey)
+            .setScale(0.8)
+            .setDepth(2);
+        }
+      }
     }
 
     // Reset cooldowns on age change
