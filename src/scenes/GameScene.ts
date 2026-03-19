@@ -9,6 +9,10 @@ import { EconomySystem } from '../core/systems/EconomySystem';
 import { AgeSystem } from '../core/systems/AgeSystem';
 import { SpawnRequest } from '../core/systems/SpawnSystem';
 import { ParticleManager } from '../rendering/ParticleManager';
+import { ProceduralSpriteFactory } from '../rendering/ProceduralSpriteFactory';
+import { BaseRenderer } from '../rendering/BaseRenderer';
+import { TurretRenderer } from '../rendering/TurretRenderer';
+import { BackgroundRenderer } from '../rendering/BackgroundRenderer';
 import type { Position } from '../core/components/Position';
 import type { Faction } from '../core/components/Faction';
 import type { Renderable } from '../core/components/Renderable';
@@ -40,21 +44,32 @@ import turretsJson from '../config/turrets.json';
 import abilitiesJson from '../config/abilities.json';
 
 /**
- * Size (w, h) per unit archetype used for placeholder rectangles.
- * Same visual style as the original scene.
+ * Size (w, h) per unit archetype — matches ProceduralSpriteFactory sizes.
  */
 const UNIT_SIZES: Record<string, [number, number]> = {
   infantry: [16, 24],
-  ranged: [14, 22],
+  ranged: [14, 24],
   heavy: [24, 32],
   special: [20, 28],
-  hero: [28, 36],
+  hero: [32, 40],
 };
 
-/** Color per faction. */
+/** Fallback color per faction (used only when texture not available). */
 const FACTION_COLORS: Record<string, number> = {
   player: 0x4488ff,
   enemy: 0xff4444,
+};
+
+/** Hero ID by age number. */
+const HERO_IDS: Record<number, string> = {
+  1: 'grok',
+  2: 'sargon',
+  3: 'leonidas',
+  4: 'joan_of_arc',
+  5: 'napoleon',
+  6: 'iron_baron',
+  7: 'commander_steele',
+  8: 'axiom_7',
 };
 
 /** Age names for the evolution transition display. */
@@ -109,10 +124,17 @@ export class GameScene extends Phaser.Scene {
 
   // ── Turret visuals ──
   private turretRects: Map<number, Phaser.GameObjects.Rectangle> = new Map();
+  private turretImages: Map<number, Phaser.GameObjects.Image> = new Map();
 
   // ── Hero visual ──
   private heroRect: Phaser.GameObjects.Rectangle | null = null;
+  private heroImage: Phaser.GameObjects.Image | null = null;
+  private heroGlow: Phaser.GameObjects.Rectangle | null = null;
   private heroEntityId: number | null = null;
+
+  // ── Last known player age (for background/base update) ──
+  private lastRenderedPlayerAge: number = 0;
+  private lastRenderedEnemyAge: number = 0;
 
   // ── State ──
   private gameState!: GameState;
@@ -121,12 +143,23 @@ export class GameScene extends Phaser.Scene {
   // ── Particles ──
   private particles!: ParticleManager;
 
-  // ── Phaser rectangle pool: ECS entityId → Phaser rectangle ──
+  // ── Procedural renderers ──
+  private spriteFactory!: ProceduralSpriteFactory;
+  private baseRenderer!: BaseRenderer;
+  private turretRendererFactory!: TurretRenderer;
+  private backgroundRenderer!: BackgroundRenderer;
+
+  // ── Phaser sprite pool: ECS entityId → Phaser image ──
+  private entitySprites: Map<number, Phaser.GameObjects.Image> = new Map();
+
+  // ── Phaser rectangle pool (legacy fallback): ECS entityId → Phaser rectangle ──
   private entityRects: Map<number, Phaser.GameObjects.Rectangle> = new Map();
 
   // ── Bases ──
   private playerBase!: Phaser.GameObjects.Rectangle;
   private enemyBase!: Phaser.GameObjects.Rectangle;
+  private playerBaseImage: Phaser.GameObjects.Image | null = null;
+  private enemyBaseImage: Phaser.GameObjects.Image | null = null;
   private playerBaseDetails!: Phaser.GameObjects.Graphics;
   private enemyBaseDetails!: Phaser.GameObjects.Graphics;
   private playerFlag!: Phaser.GameObjects.Rectangle;
@@ -134,6 +167,8 @@ export class GameScene extends Phaser.Scene {
   private playerFlagPole!: Phaser.GameObjects.Rectangle;
   private enemyFlagPole!: Phaser.GameObjects.Rectangle;
   private baseCrackGraphics!: Phaser.GameObjects.Graphics;
+  private playerBaseDamageImage: Phaser.GameObjects.Image | null = null;
+  private enemyBaseDamageImage: Phaser.GameObjects.Image | null = null;
 
   // ── Ground ──
   private ground!: Phaser.GameObjects.Graphics;
@@ -323,11 +358,30 @@ export class GameScene extends Phaser.Scene {
     // Share game state with HUD via the data manager
     this.data.set('gameState', this.gameState);
 
-    // Clear any leftover entity rects from a previous game
+    // Clear any leftover entity rects/sprites from a previous game
     this.entityRects = new Map();
+    this.entitySprites = new Map();
+
+    // ── Procedural sprite generation ──
+    this.spriteFactory = new ProceduralSpriteFactory(this);
+    this.spriteFactory.generateAll();
+
+    this.baseRenderer = new BaseRenderer(this);
+    this.baseRenderer.generateAll();
+
+    this.turretRendererFactory = new TurretRenderer(this);
+    this.turretRendererFactory.generateAll();
+
+    this.backgroundRenderer = new BackgroundRenderer(this);
+    this.backgroundRenderer.generateAll();
 
     // ── Particle manager ──
     this.particles = new ParticleManager(this);
+
+    // Show initial background
+    this.backgroundRenderer.showAge(1);
+    this.lastRenderedPlayerAge = 1;
+    this.lastRenderedEnemyAge = 1;
 
     // Draw the world
     this.createGround();
@@ -559,44 +613,44 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createBases(): void {
-    const baseW = 48;
-    const baseH = 80;
+    const baseW = 60;
+    const baseH = 100;
     const baseY = GameScene.GROUND_Y - baseH / 2;
 
-    // ── Base detail graphics (windows/doors) ──
+    // ── Base detail graphics (legacy fallback) ──
     this.playerBaseDetails = this.add.graphics().setDepth(1);
     this.enemyBaseDetails = this.add.graphics().setDepth(1);
 
-    // Player base (left side, blue tint)
+    // Hidden fallback rectangles (keep for collapse logic)
     this.playerBase = this.add.rectangle(
       GameScene.PLAYER_BASE_X, baseY, baseW, baseH, 0x2244aa
-    ).setStrokeStyle(3, 0x4488ff).setDepth(0);
+    ).setStrokeStyle(3, 0x4488ff).setDepth(0).setVisible(false);
 
-    // Player base details — windows and door
-    this.drawBaseDetails(this.playerBaseDetails, GameScene.PLAYER_BASE_X, baseY, baseW, baseH, 0x1133aa, 0x88bbff);
+    this.enemyBase = this.add.rectangle(
+      GameScene.ENEMY_BASE_X, baseY, baseW, baseH, 0xaa2222
+    ).setStrokeStyle(3, 0xff4444).setDepth(0).setVisible(false);
+
+    // Use procedural base textures
+    const playerBaseKey = this.baseRenderer.getTextureKey(1, 'player');
+    const enemyBaseKey = this.baseRenderer.getTextureKey(1, 'enemy');
+
+    this.playerBaseImage = this.add.image(GameScene.PLAYER_BASE_X, baseY, playerBaseKey)
+      .setDepth(0);
+    this.enemyBaseImage = this.add.image(GameScene.ENEMY_BASE_X, baseY, enemyBaseKey)
+      .setDepth(0);
 
     // Flag pole on player base
     this.playerFlagPole = this.add.rectangle(
       GameScene.PLAYER_BASE_X, baseY - baseH / 2 - 14, 2, 28, 0xcccccc
     ).setDepth(1);
-    // Flag (will wave)
     this.playerFlag = this.add.rectangle(
       GameScene.PLAYER_BASE_X + 6, baseY - baseH / 2 - 22, 12, 8, 0x4488ff
     ).setDepth(2);
-
-    // Enemy base (right side, red tint)
-    this.enemyBase = this.add.rectangle(
-      GameScene.ENEMY_BASE_X, baseY, baseW, baseH, 0xaa2222
-    ).setStrokeStyle(3, 0xff4444).setDepth(0);
-
-    // Enemy base details
-    this.drawBaseDetails(this.enemyBaseDetails, GameScene.ENEMY_BASE_X, baseY, baseW, baseH, 0xaa1111, 0xff8888);
 
     // Flag pole on enemy base
     this.enemyFlagPole = this.add.rectangle(
       GameScene.ENEMY_BASE_X, baseY - baseH / 2 - 14, 2, 28, 0xcccccc
     ).setDepth(1);
-    // Flag (will wave)
     this.enemyFlag = this.add.rectangle(
       GameScene.ENEMY_BASE_X + 6, baseY - baseH / 2 - 22, 12, 8, 0xff4444
     ).setDepth(2);
@@ -711,16 +765,20 @@ export class GameScene extends Phaser.Scene {
     const baseY = GameScene.GROUND_Y - 40;
     const color = faction === 'player' ? 0x2244aa : 0xaa2222;
 
-    // Hide the base rectangle and details
+    // Hide the base images and details
     const base = faction === 'player' ? this.playerBase : this.enemyBase;
+    const baseImage = faction === 'player' ? this.playerBaseImage : this.enemyBaseImage;
     const details = faction === 'player' ? this.playerBaseDetails : this.enemyBaseDetails;
     const flag = faction === 'player' ? this.playerFlag : this.enemyFlag;
     const pole = faction === 'player' ? this.playerFlagPole : this.enemyFlagPole;
+    const damageImg = faction === 'player' ? this.playerBaseDamageImage : this.enemyBaseDamageImage;
 
     base.setVisible(false);
+    if (baseImage) baseImage.setVisible(false);
     details.setVisible(false);
     flag.setVisible(false);
     pole.setVisible(false);
+    if (damageImg) damageImg.setVisible(false);
 
     // Spawn collapse particles
     this.particles.spawnCollapse(baseX, baseY, color, 12);
@@ -1309,11 +1367,34 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    // ── Update background/bases on age change ──
+    const currentPlayerAge = this.playerAgeSystem.getCurrentAge();
+    if (currentPlayerAge !== this.lastRenderedPlayerAge) {
+      this.backgroundRenderer.showAge(currentPlayerAge);
+      this.updateBaseTexture('player', currentPlayerAge);
+      this.lastRenderedPlayerAge = currentPlayerAge;
+      // Reset hero sprite for new age
+      if (this.heroImage) {
+        this.heroImage.destroy();
+        this.heroImage = null;
+      }
+      if (this.heroGlow) {
+        this.heroGlow.destroy();
+        this.heroGlow = null;
+      }
+    }
+    const currentEnemyAge = this.enemyAgeSystem.getCurrentAge();
+    if (currentEnemyAge !== this.lastRenderedEnemyAge) {
+      this.updateBaseTexture('enemy', currentEnemyAge);
+      this.lastRenderedEnemyAge = currentEnemyAge;
+    }
+
     // ── Render ──
     this.renderEntities();
     this.renderHero();
     this.renderTurrets();
     this.updateWeatherOverlay();
+    this.updateBaseDamageOverlays();
 
     // Update visual effects
     this.updateClouds(deltaSec);
@@ -1416,7 +1497,8 @@ export class GameScene extends Phaser.Scene {
       const unitType = world.getComponent<UnitTypeComponent>(entityId, 'UnitType');
 
       if (!renderable.visible) {
-        // Hide existing rect if invisible
+        const existingSprite = this.entitySprites.get(entityId);
+        if (existingSprite) existingSprite.setVisible(false);
         const existing = this.entityRects.get(entityId);
         if (existing) existing.setVisible(false);
         continue;
@@ -1424,27 +1506,60 @@ export class GameScene extends Phaser.Scene {
 
       const archetype = unitType?.type ?? 'infantry';
       const [w, h] = UNIT_SIZES[archetype] ?? UNIT_SIZES['infantry'];
-      const color = FACTION_COLORS[faction.faction] ?? 0xffffff;
       const screenX = this.ecsXToScreen(pos.x);
       const screenY = GameScene.GROUND_Y - h / 2;
+      const unitId = unitType?.unitId ?? '';
 
-      let rect = this.entityRects.get(entityId);
-      if (!rect) {
-        // Create new rectangle for this entity
-        rect = this.add.rectangle(screenX, screenY, w, h, color)
-          .setStrokeStyle(1, 0xffffff)
-          .setDepth(5);
-        this.entityRects.set(entityId, rect);
+      // Try to use procedural sprite texture
+      const textureKey = this.spriteFactory.getUnitTextureKey(unitId, faction.faction);
+      const hasTexture = this.textures.exists(textureKey);
+
+      if (hasTexture) {
+        let sprite = this.entitySprites.get(entityId);
+        if (!sprite) {
+          sprite = this.add.image(screenX, screenY, textureKey)
+            .setDepth(5);
+          // Flip enemy sprites to face left
+          if (faction.faction === 'enemy') {
+            sprite.setFlipX(true);
+          }
+          this.entitySprites.set(entityId, sprite);
+        } else {
+          sprite.setPosition(screenX, screenY);
+          sprite.setVisible(true);
+        }
+
+        // Remove old rect if we switched to sprite
+        const oldRect = this.entityRects.get(entityId);
+        if (oldRect) {
+          oldRect.destroy();
+          this.entityRects.delete(entityId);
+        }
       } else {
-        // Update existing rectangle position
-        rect.setPosition(screenX, screenY);
-        rect.setSize(w, h);
-        rect.setFillStyle(color);
-        rect.setVisible(true);
+        // Fallback: colored rectangle
+        const color = FACTION_COLORS[faction.faction] ?? 0xffffff;
+        let rect = this.entityRects.get(entityId);
+        if (!rect) {
+          rect = this.add.rectangle(screenX, screenY, w, h, color)
+            .setStrokeStyle(1, 0xffffff)
+            .setDepth(5);
+          this.entityRects.set(entityId, rect);
+        } else {
+          rect.setPosition(screenX, screenY);
+          rect.setSize(w, h);
+          rect.setFillStyle(color);
+          rect.setVisible(true);
+        }
       }
     }
 
-    // Remove rectangles for entities that no longer exist
+    // Remove sprites/rectangles for entities that no longer exist
+    for (const [entityId, sprite] of this.entitySprites) {
+      if (!aliveIds.has(entityId)) {
+        sprite.destroy();
+        this.entitySprites.delete(entityId);
+      }
+    }
     for (const [entityId, rect] of this.entityRects) {
       if (!aliveIds.has(entityId)) {
         rect.destroy();
@@ -1544,9 +1659,9 @@ export class GameScene extends Phaser.Scene {
   private renderHero(): void {
     const heroId = this.heroManager.getHero('player');
     if (heroId === null || !this.gameManager.world.isAlive(heroId)) {
-      if (this.heroRect) {
-        this.heroRect.setVisible(false);
-      }
+      if (this.heroImage) this.heroImage.setVisible(false);
+      if (this.heroGlow) this.heroGlow.setVisible(false);
+      if (this.heroRect) this.heroRect.setVisible(false);
       return;
     }
 
@@ -1555,14 +1670,42 @@ export class GameScene extends Phaser.Scene {
 
     const screenX = this.ecsXToScreen(pos.x);
     const screenY = GameScene.GROUND_Y - 20; // 40/2
+    const currentAge = this.playerAgeSystem.getCurrentAge();
+    const heroKey = HERO_IDS[currentAge] ?? 'grok';
+    const textureKey = this.spriteFactory.getHeroTextureKey(heroKey, 'player');
+    const hasTexture = this.textures.exists(textureKey);
 
-    if (!this.heroRect) {
-      this.heroRect = this.add.rectangle(screenX, screenY, 32, 40, 0x4488ff)
-        .setStrokeStyle(2, 0xffd700) // gold border
-        .setDepth(6);
+    if (hasTexture) {
+      // Gold glow outline behind hero
+      if (!this.heroGlow) {
+        this.heroGlow = this.add.rectangle(screenX, screenY, 36, 44, 0xffd700, 0.25)
+          .setDepth(5);
+      } else {
+        this.heroGlow.setPosition(screenX, screenY);
+        this.heroGlow.setVisible(true);
+      }
+
+      if (!this.heroImage) {
+        this.heroImage = this.add.image(screenX, screenY, textureKey)
+          .setDepth(6);
+      } else {
+        this.heroImage.setPosition(screenX, screenY);
+        this.heroImage.setTexture(textureKey);
+        this.heroImage.setVisible(true);
+      }
+
+      // Hide old rect
+      if (this.heroRect) this.heroRect.setVisible(false);
     } else {
-      this.heroRect.setPosition(screenX, screenY);
-      this.heroRect.setVisible(true);
+      // Fallback
+      if (!this.heroRect) {
+        this.heroRect = this.add.rectangle(screenX, screenY, 32, 40, 0x4488ff)
+          .setStrokeStyle(2, 0xffd700)
+          .setDepth(6);
+      } else {
+        this.heroRect.setPosition(screenX, screenY);
+        this.heroRect.setVisible(true);
+      }
     }
   }
 
@@ -1586,11 +1729,17 @@ export class GameScene extends Phaser.Scene {
   // ─────────────────────── PHASE 3: TURRET RENDERING ───────────────────────
 
   private renderTurrets(): void {
-    // Clean up old rects for turrets that no longer exist
+    // Clean up old rects/images for turrets that no longer exist
     for (const [entityId, rect] of this.turretRects) {
       if (!this.gameManager.world.isAlive(entityId)) {
         rect.destroy();
         this.turretRects.delete(entityId);
+      }
+    }
+    for (const [entityId, img] of this.turretImages) {
+      if (!this.gameManager.world.isAlive(entityId)) {
+        img.destroy();
+        this.turretImages.delete(entityId);
       }
     }
 
@@ -1603,16 +1752,98 @@ export class GameScene extends Phaser.Scene {
       const pos = this.playerTurretManager.getSlotPosition(slot);
       const screenX = this.ecsXToScreen(pos.x);
       const screenY = GameScene.GROUND_Y - 20;
+      const turretId = turretInfo.turretId;
+      const textureKey = this.turretRendererFactory.getTextureKey(turretId, 'player');
+      const hasTexture = this.textures.exists(textureKey);
 
-      let rect = this.turretRects.get(turretInfo.entityId);
-      if (!rect) {
-        rect = this.add.rectangle(screenX, screenY, 16, 16, 0x44aaff)
-          .setStrokeStyle(1, 0xffffff)
-          .setDepth(4);
-        this.turretRects.set(turretInfo.entityId, rect);
+      if (hasTexture) {
+        let img = this.turretImages.get(turretInfo.entityId);
+        if (!img) {
+          img = this.add.image(screenX, screenY, textureKey).setDepth(4);
+          this.turretImages.set(turretInfo.entityId, img);
+        } else {
+          img.setPosition(screenX, screenY);
+        }
+        // Remove old rect if exists
+        const oldRect = this.turretRects.get(turretInfo.entityId);
+        if (oldRect) {
+          oldRect.destroy();
+          this.turretRects.delete(turretInfo.entityId);
+        }
       } else {
-        rect.setPosition(screenX, screenY);
+        let rect = this.turretRects.get(turretInfo.entityId);
+        if (!rect) {
+          rect = this.add.rectangle(screenX, screenY, 16, 16, 0x44aaff)
+            .setStrokeStyle(1, 0xffffff)
+            .setDepth(4);
+          this.turretRects.set(turretInfo.entityId, rect);
+        } else {
+          rect.setPosition(screenX, screenY);
+        }
       }
+    }
+  }
+
+  // ─────────────────────── BASE TEXTURE UPDATE ───────────────────────
+
+  private updateBaseTexture(faction: 'player' | 'enemy', age: number): void {
+    const baseH = 100;
+    const baseY = GameScene.GROUND_Y - baseH / 2;
+    const baseX = faction === 'player' ? GameScene.PLAYER_BASE_X : GameScene.ENEMY_BASE_X;
+    const textureKey = this.baseRenderer.getTextureKey(age, faction);
+
+    if (faction === 'player') {
+      if (this.playerBaseImage) {
+        this.playerBaseImage.setTexture(textureKey);
+      } else {
+        this.playerBaseImage = this.add.image(baseX, baseY, textureKey).setDepth(0);
+      }
+    } else {
+      if (this.enemyBaseImage) {
+        this.enemyBaseImage.setTexture(textureKey);
+      } else {
+        this.enemyBaseImage = this.add.image(baseX, baseY, textureKey).setDepth(0);
+      }
+    }
+  }
+
+  private updateBaseDamageOverlays(): void {
+    const baseH = 100;
+    const baseY = GameScene.GROUND_Y - baseH / 2;
+
+    // Player damage overlay
+    const playerPct = this.gameState.player.baseMaxHp > 0
+      ? this.gameState.player.baseHp / this.gameState.player.baseMaxHp : 1;
+    this.updateDamageImage('player', GameScene.PLAYER_BASE_X, baseY, playerPct);
+
+    // Enemy damage overlay
+    const enemyPct = this.gameState.enemy.baseMaxHp > 0
+      ? this.gameState.enemy.baseHp / this.gameState.enemy.baseMaxHp : 1;
+    this.updateDamageImage('enemy', GameScene.ENEMY_BASE_X, baseY, enemyPct);
+  }
+
+  private updateDamageImage(faction: 'player' | 'enemy', x: number, y: number, hpPct: number): void {
+    let level = 0;
+    if (hpPct < 0.25) level = 3;
+    else if (hpPct < 0.5) level = 2;
+    else if (hpPct < 0.75) level = 1;
+
+    const imgRef = faction === 'player' ? 'playerBaseDamageImage' : 'enemyBaseDamageImage';
+
+    if (level === 0) {
+      if (this[imgRef]) {
+        this[imgRef]!.setVisible(false);
+      }
+      return;
+    }
+
+    const key = this.baseRenderer.getDamageTextureKey(level);
+    if (!this[imgRef]) {
+      this[imgRef] = this.add.image(x, y, key).setDepth(2);
+    } else {
+      this[imgRef]!.setTexture(key);
+      this[imgRef]!.setPosition(x, y);
+      this[imgRef]!.setVisible(true);
     }
   }
 
@@ -1630,11 +1861,19 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true });
 
     menuBtn.on('pointerdown', () => {
-      // Clean up all entity rectangles
+      // Clean up all entity sprites and rectangles
+      for (const [, sprite] of this.entitySprites) {
+        sprite.destroy();
+      }
+      this.entitySprites.clear();
       for (const [, rect] of this.entityRects) {
         rect.destroy();
       }
       this.entityRects.clear();
+      for (const [, img] of this.turretImages) {
+        img.destroy();
+      }
+      this.turretImages.clear();
 
       // Clean up particles
       this.particles.destroy();
