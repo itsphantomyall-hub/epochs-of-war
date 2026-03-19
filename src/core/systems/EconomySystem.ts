@@ -91,7 +91,7 @@ export class EconomySystem {
    * @param enemyAge - The age of the enemy when the unit was killed.
    * @param turretKill - Whether the kill was by a turret (+50% gold bonus).
    */
-  earnFromKill(unitType: UnitType | 'hero', enemyAge: number, turretKill: boolean = false): { gold: number; xp: number } {
+  earnFromKill(unitType: UnitType, enemyAge: number, turretKill: boolean = false): { gold: number; xp: number } {
     const range = KILL_REWARDS[unitType];
     if (!range) {
       return { gold: 0, xp: 0 };

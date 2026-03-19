@@ -1,0 +1,35 @@
+{
+  "terrains": {
+    "open_plains": {
+      "name": "Open Plains",
+      "effect": "none"
+    },
+    "bridge": {
+      "name": "Bridge/Choke",
+      "effect": "max_3_units_wide",
+      "combatWidth": 3
+    },
+    "high_ground": {
+      "name": "High Ground",
+      "rangeBonus": 0.15,
+      "damageBonus": 0.10,
+      "xStart": 600,
+      "xEnd": 1000
+    },
+    "river": {
+      "name": "River",
+      "speedReduction": 0.30,
+      "xStart": 700,
+      "xEnd": 900
+    },
+    "forest": {
+      "name": "Forest",
+      "rangedAccuracyPenalty": 0.30,
+      "meleeDamageBonus": 0.10
+    },
+    "ruins": {
+      "name": "Ruins",
+      "rangedDamageReduction": 0.25
+    }
+  }
+}

@@ -1,0 +1,188 @@
+{
+  "heroes": {
+    "grok": {
+      "displayName": "Grok, the First Hunter",
+      "age": 1,
+      "hp": 200,
+      "damage": 25,
+      "speed": 2.5,
+      "range": 40,
+      "attackSpeed": 1.2,
+      "abilities": [
+        {
+          "id": "primal_roar",
+          "name": "Primal Roar",
+          "cooldown": 20,
+          "effect": { "type": "stun", "duration": 2, "radius": 120 }
+        },
+        {
+          "id": "bone_club_sweep",
+          "name": "Bone Club Sweep",
+          "cooldown": 8,
+          "effect": { "type": "aoe_damage", "damage": 40, "radius": 80 }
+        }
+      ]
+    },
+    "sargon": {
+      "displayName": "Sargon, the Conqueror",
+      "age": 2,
+      "hp": 350,
+      "damage": 30,
+      "speed": 2.8,
+      "range": 40,
+      "attackSpeed": 1.0,
+      "abilities": [
+        {
+          "id": "inspiring_charge",
+          "name": "Inspiring Charge",
+          "cooldown": 25,
+          "effect": { "type": "buff_speed", "multiplier": 1.3, "duration": 5, "radius": 200 }
+        },
+        {
+          "id": "shield_wall",
+          "name": "Shield Wall",
+          "cooldown": 15,
+          "effect": { "type": "shield", "duration": 3, "radius": 100 }
+        }
+      ]
+    },
+    "leonidas": {
+      "displayName": "Leonidas",
+      "age": 3,
+      "hp": 400,
+      "damage": 35,
+      "speed": 2.2,
+      "range": 40,
+      "attackSpeed": 1.1,
+      "abilities": [
+        {
+          "id": "last_stand",
+          "name": "Last Stand",
+          "cooldown": 0,
+          "effect": { "type": "passive_last_stand", "hpThreshold": 0.25, "damageMultiplier": 2.0 }
+        },
+        {
+          "id": "spartan_push",
+          "name": "Spartan Push",
+          "cooldown": 12,
+          "effect": { "type": "knockback", "distance": 50, "radius": 100 }
+        }
+      ]
+    },
+    "joan_of_arc": {
+      "displayName": "Joan of Arc",
+      "age": 4,
+      "hp": 350,
+      "damage": 28,
+      "speed": 2.4,
+      "range": 40,
+      "attackSpeed": 1.0,
+      "abilities": [
+        {
+          "id": "divine_light",
+          "name": "Divine Light",
+          "cooldown": 30,
+          "effect": { "type": "heal", "healPercent": 0.20, "radius": 200 }
+        },
+        {
+          "id": "banner_of_courage",
+          "name": "Banner of Courage",
+          "cooldown": 20,
+          "effect": { "type": "buff_damage", "multiplier": 1.25, "duration": 8, "radius": 200 }
+        }
+      ]
+    },
+    "napoleon": {
+      "displayName": "Napoleon",
+      "age": 5,
+      "hp": 300,
+      "damage": 32,
+      "speed": 2.0,
+      "range": 60,
+      "attackSpeed": 0.9,
+      "abilities": [
+        {
+          "id": "artillery_barrage",
+          "name": "Artillery Barrage",
+          "cooldown": 25,
+          "effect": { "type": "airstrike", "strikes": 3, "damage": 80, "radius": 60 }
+        },
+        {
+          "id": "tactical_genius",
+          "name": "Tactical Genius",
+          "cooldown": 30,
+          "effect": { "type": "buff_range", "multiplier": 1.20, "duration": 10, "radius": 300 }
+        }
+      ]
+    },
+    "iron_baron": {
+      "displayName": "The Iron Baron",
+      "age": 6,
+      "hp": 500,
+      "damage": 38,
+      "speed": 1.8,
+      "range": 40,
+      "attackSpeed": 1.0,
+      "abilities": [
+        {
+          "id": "deploy_turret",
+          "name": "Deploy Turret",
+          "cooldown": 40,
+          "effect": { "type": "deploy_turret", "turretDamage": 20, "turretFireRate": 2.0, "turretRange": 150, "duration": 20 }
+        },
+        {
+          "id": "smoke_screen",
+          "name": "Smoke Screen",
+          "cooldown": 25,
+          "effect": { "type": "smoke_screen", "duration": 3, "radius": 200 }
+        }
+      ]
+    },
+    "commander_steele": {
+      "displayName": "Commander Steele",
+      "age": 7,
+      "hp": 450,
+      "damage": 42,
+      "speed": 2.0,
+      "range": 80,
+      "attackSpeed": 1.2,
+      "abilities": [
+        {
+          "id": "airstrike",
+          "name": "Airstrike",
+          "cooldown": 35,
+          "effect": { "type": "airstrike", "strikes": 5, "damage": 100, "radius": 80 }
+        },
+        {
+          "id": "fortify",
+          "name": "Fortify",
+          "cooldown": 30,
+          "effect": { "type": "buff_turrets", "fireRateMultiplier": 1.5, "duration": 8 }
+        }
+      ]
+    },
+    "axiom_7": {
+      "displayName": "AXIOM-7 (AI Commander)",
+      "age": 8,
+      "hp": 600,
+      "damage": 50,
+      "speed": 2.2,
+      "range": 100,
+      "attackSpeed": 1.5,
+      "abilities": [
+        {
+          "id": "temporal_shift",
+          "name": "Temporal Shift",
+          "cooldown": 45,
+          "effect": { "type": "temporal_shift", "rewindSeconds": 3, "radius": 400 }
+        },
+        {
+          "id": "singularity",
+          "name": "Singularity",
+          "cooldown": 30,
+          "effect": { "type": "singularity", "pullStrength": 200, "radius": 250, "duration": 3 }
+        }
+      ]
+    }
+  }
+}

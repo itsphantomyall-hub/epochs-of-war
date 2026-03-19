@@ -1,6 +1,6 @@
 /** Unit type interfaces matching GAME_DESIGN.md Section 34.1 schema */
 
-export type UnitType = 'infantry' | 'ranged' | 'heavy' | 'special';
+export type UnitType = 'infantry' | 'ranged' | 'heavy' | 'special' | 'hero';
 
 export interface UnitStats {
   hp: number;

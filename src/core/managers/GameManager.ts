@@ -71,7 +71,7 @@ export class GameManager {
 
     // Create systems
     this.spawnSystem = new SpawnSystem(this.spatialGrid, this.events);
-    this.movementSystem = new MovementSystem();
+    this.movementSystem = new MovementSystem(this.spatialGrid);
     this.combatSystem = new CombatSystem(this.spatialGrid, this.events);
     this.healthSystem = new HealthSystem(this.events);
     this.cleanupSystem = new CleanupSystem(this.spatialGrid);
@@ -101,6 +101,16 @@ export class GameManager {
 
   get elapsedTime(): number {
     return this._elapsedTime;
+  }
+
+  /** Set the player base HP (called by GameScene to sync initial values). */
+  setPlayerBaseHp(hp: number): void {
+    this._playerBaseHp = hp;
+  }
+
+  /** Set the enemy base HP (called by GameScene to sync initial values). */
+  setEnemyBaseHp(hp: number): void {
+    this._enemyBaseHp = hp;
   }
 
   // ── State control ─────────────────────────────────────────────

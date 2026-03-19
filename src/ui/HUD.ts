@@ -46,6 +46,16 @@ export class HUD extends Phaser.Scene {
   private playerHpBarFill!: Phaser.GameObjects.Rectangle;
   private playerHpText!: Phaser.GameObjects.Text;
 
+  // ── XP bar glow ──
+  private xpGlowGraphics!: Phaser.GameObjects.Graphics;
+  private xpGlowTimer: number = 0;
+
+  // ── Gold flash state ──
+  private goldFlashTimer: number = 0;
+
+  // ── Player HP flash state ──
+  private playerHpFlashTimer: number = 0;
+
   // ── Bottom bar elements ──
   private unitButtons: UnitButton[] = [];
   private evolveBtn!: Phaser.GameObjects.Rectangle;
@@ -104,6 +114,9 @@ export class HUD extends Phaser.Scene {
   private evolveReady = false;
   private evolvePulseTimer = 0;
 
+  // ── Hover tracking for unit buttons ──
+  private hoveredButtonIndex: number = -1;
+
   constructor() {
     super({ key: 'HUD' });
   }
@@ -146,6 +159,9 @@ export class HUD extends Phaser.Scene {
       fontSize: '10px', fontFamily: 'monospace', color: '#ffffff',
     }).setOrigin(0.5).setDepth(2);
 
+    // XP bar glow graphics (drawn behind XP bar when full)
+    this.xpGlowGraphics = this.add.graphics().setDepth(0);
+
     // ── Age name (center) ──
     this.ageText = this.add.text(width / 2, hpY, 'Prehistoric', {
       fontSize: '16px', fontFamily: 'monospace', color: '#ffffff', fontStyle: 'bold',
@@ -183,7 +199,19 @@ export class HUD extends Phaser.Scene {
 
       const bg = this.add.rectangle(x, y, btnW, btnH, 0x224466, 1)
         .setStrokeStyle(2, 0x4488cc)
-        .setDepth(1);
+        .setDepth(1)
+        .setInteractive({ useHandCursor: true });
+
+      // Hover effect for unit buttons
+      const buttonIndex = i;
+      bg.on('pointerover', () => {
+        this.hoveredButtonIndex = buttonIndex;
+      });
+      bg.on('pointerout', () => {
+        if (this.hoveredButtonIndex === buttonIndex) {
+          this.hoveredButtonIndex = -1;
+        }
+      });
 
       const nameText = this.add.text(x, y - 14, def.name, {
         fontSize: '11px', fontFamily: 'monospace', color: '#ffffff',
@@ -261,29 +289,63 @@ export class HUD extends Phaser.Scene {
       }
     }
 
-    this.updateTopBar();
+    this.updateTopBar(delta);
     this.updateUnitButtons(delta);
     this.updateEvolveButton(delta);
     this.updateSpecialButton(delta);
     this.updateHeroButtons(delta);
   }
 
-  private updateTopBar(): void {
+  private updateTopBar(delta: number): void {
     const { player, enemy } = this.gameState;
 
-    // Gold
+    // Gold — with flash effect
     this.goldText.setText(`Gold: ${Math.floor(player.gold).toLocaleString()}`);
+    if (this.goldFlashTimer > 0) {
+      this.goldFlashTimer -= delta / 1000;
+      const flashProgress = this.goldFlashTimer / 0.4;
+      if (flashProgress > 0.5) {
+        // yellow -> white
+        this.goldText.setColor('#ffffff');
+      } else {
+        // white -> back to gold
+        this.goldText.setColor('#ffd700');
+      }
+    } else {
+      this.goldText.setColor('#ffd700');
+    }
 
-    // Player base HP
+    // Player base HP — with damage flash
     const playerHpRatio = Math.max(0, player.baseHp / player.baseMaxHp);
     this.playerHpBarFill.scaleX = playerHpRatio;
     this.playerHpText.setText(`${Math.ceil(player.baseHp)}/${player.baseMaxHp}`);
+    if (this.playerHpFlashTimer > 0) {
+      this.playerHpFlashTimer -= delta / 1000;
+      this.playerHpBarFill.setFillStyle(0xff2222);
+    } else {
+      this.playerHpBarFill.setFillStyle(0x44cc44);
+    }
 
     // XP bar
     const xpToNext = this.getXpToNext(player.currentAge);
     const xpRatio = xpToNext > 0 ? Math.min(player.xp / xpToNext, 1) : 1;
     this.xpBarFill.scaleX = xpRatio;
     this.xpText.setText(`${Math.floor(player.xp)}/${xpToNext}`);
+
+    // XP bar glow when full (can evolve)
+    this.xpGlowGraphics.clear();
+    if (xpRatio >= 1 && player.currentAge < 8) {
+      this.xpGlowTimer += delta / 1000;
+      const glowAlpha = 0.2 + 0.15 * Math.sin(this.xpGlowTimer * 5);
+      const xpBarCenterX = this.xpBarBg.x;
+      const xpBarCenterY = this.xpBarBg.y;
+      this.xpGlowGraphics.fillStyle(0xffdd00, glowAlpha);
+      this.xpGlowGraphics.fillRoundedRect(
+        xpBarCenterX - 79, xpBarCenterY - 11, 158, 22, 4
+      );
+    } else {
+      this.xpGlowTimer = 0;
+    }
 
     // Age name
     const ageName = HUD.AGE_NAMES[player.currentAge] ?? `Age ${player.currentAge}`;
@@ -305,12 +367,25 @@ export class HUD extends Phaser.Scene {
       const def = this.unitDefs[btn.index];
       const canAfford = player.gold >= def.cost;
       const onCooldown = this.unitCooldowns[btn.index] > 0;
+      const isHovered = this.hoveredButtonIndex === btn.index;
 
-      // Grey out when can't afford
-      const bgColor = canAfford ? 0x224466 : 0x222222;
+      // Base color — brighter when hovered
+      let bgColor: number;
+      if (!canAfford) {
+        bgColor = isHovered ? 0x333333 : 0x222222;
+      } else {
+        bgColor = isHovered ? 0x336688 : 0x224466;
+      }
       btn.bg.setFillStyle(bgColor);
       btn.costText.setColor(canAfford ? '#ffd700' : '#666666');
       btn.nameText.setColor(canAfford ? '#ffffff' : '#666666');
+
+      // Stroke brightens on hover
+      if (isHovered && canAfford) {
+        btn.bg.setStrokeStyle(2, 0x66aaee);
+      } else {
+        btn.bg.setStrokeStyle(2, 0x4488cc);
+      }
 
       // Cooldown fill overlay
       if (onCooldown) {
@@ -421,6 +496,22 @@ export class HUD extends Phaser.Scene {
     if (abilityIndex >= 0 && abilityIndex < 2) {
       this.heroCooldowns[abilityIndex] = duration;
     }
+  }
+
+  /**
+   * Called by GameScene when gold increases from a kill.
+   * Triggers a brief yellow->white->gold flash on the gold text.
+   */
+  flashGoldText(): void {
+    this.goldFlashTimer = 0.4;
+  }
+
+  /**
+   * Called by GameScene when the player base takes damage.
+   * Triggers a brief red flash on the player HP bar.
+   */
+  flashPlayerHpBar(): void {
+    this.playerHpFlashTimer = 0.3;
   }
 
   /**

@@ -1,0 +1,94 @@
+{
+  "branches": {
+    "military": {
+      "name": "Military",
+      "color": "#ff4444",
+      "tiers": [
+        {
+          "id": "recruitment",
+          "name": "Recruitment",
+          "description": "Unit spawn time -15%",
+          "effect": { "type": "spawn_time_reduction", "value": 0.85 }
+        },
+        {
+          "id": "veteran_training",
+          "name": "Veteran Training",
+          "description": "All units +10% HP",
+          "effect": { "type": "unit_hp_bonus", "value": 1.10 }
+        },
+        {
+          "id": "elite_forces",
+          "name": "Elite Forces",
+          "description": "Unlock upgraded Special unit",
+          "effect": { "type": "elite_special", "value": true }
+        },
+        {
+          "id": "war_machine",
+          "name": "War Machine",
+          "description": "Heavy units cost -25%",
+          "effect": { "type": "heavy_cost_reduction", "value": 0.75 }
+        }
+      ]
+    },
+    "economy": {
+      "name": "Economy",
+      "color": "#ffcc00",
+      "tiers": [
+        {
+          "id": "taxation",
+          "name": "Taxation",
+          "description": "Gold income per kill +20%",
+          "effect": { "type": "kill_gold_bonus", "value": 1.20 }
+        },
+        {
+          "id": "trade_routes",
+          "name": "Trade Routes",
+          "description": "Passive gold income: 5 gold/second",
+          "effect": { "type": "passive_income", "value": 5 }
+        },
+        {
+          "id": "war_bonds",
+          "name": "War Bonds",
+          "description": "Gain 500 gold instantly when evolving",
+          "effect": { "type": "evolution_gold", "value": 500 }
+        },
+        {
+          "id": "plunder",
+          "name": "Plunder",
+          "description": "Destroyed turrets refund 100% gold",
+          "effect": { "type": "turret_full_refund", "value": 1.0 }
+        }
+      ]
+    },
+    "fortification": {
+      "name": "Fortification",
+      "color": "#4488ff",
+      "tiers": [
+        {
+          "id": "thick_walls",
+          "name": "Thick Walls",
+          "description": "Base HP +20%",
+          "effect": { "type": "base_hp_bonus", "value": 1.20 }
+        },
+        {
+          "id": "repair_crews",
+          "name": "Repair Crews",
+          "description": "Base regenerates 1 HP/second",
+          "effect": { "type": "base_regen", "value": 1 }
+        },
+        {
+          "id": "extra_turret_slot",
+          "name": "Extra Turret Slot",
+          "description": "Unlock 6th turret slot",
+          "effect": { "type": "extra_turret_slot", "value": 1 }
+        },
+        {
+          "id": "fortress",
+          "name": "Fortress",
+          "description": "All turret damage +30%",
+          "effect": { "type": "turret_damage_bonus", "value": 1.30 }
+        }
+      ]
+    }
+  }
+}

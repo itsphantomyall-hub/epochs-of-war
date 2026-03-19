@@ -1,0 +1,51 @@
+{
+  "weatherTypes": {
+    "clear": {
+      "name": "Clear",
+      "duration": 0,
+      "effect": "none"
+    },
+    "rain": {
+      "name": "Rain",
+      "duration": 30,
+      "effects": {
+        "rangedDamageReduction": 0.15,
+        "speedReduction": 0.10
+      }
+    },
+    "fog": {
+      "name": "Fog",
+      "duration": 20,
+      "effects": {
+        "rangeReduction": 0.30
+      }
+    },
+    "sandstorm": {
+      "name": "Sandstorm",
+      "duration": 25,
+      "effects": {
+        "dpsToAll": 2,
+        "reducedVisibility": true
+      }
+    },
+    "lightning": {
+      "name": "Lightning Storm",
+      "duration": 15,
+      "effects": {
+        "strikeDamage": 50,
+        "strikeInterval": 3
+      }
+    },
+    "solar_flare": {
+      "name": "Solar Flare",
+      "duration": 20,
+      "futureOnly": true,
+      "effects": {
+        "energyWeaponBonus": 0.25,
+        "mechanicalDps": 5
+      }
+    }
+  },
+  "minInterval": 120,
+  "maxInterval": 180
+}
