@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { HeroSpriteFactory } from './HeroSpriteFactory';
+import { SettingsManager } from '../core/managers/SettingsManager';
 
 // ═══════════════════════════════════════════════════════════════
 //  SKIN TONE PALETTE — 6 Tones × 3 Variants (Base/Shadow/Highlight)
@@ -171,8 +172,11 @@ export class ProceduralSpriteFactory {
       const gfx = this.scene.add.graphics();
       drawFn(gfx);
 
-      // Faction tint overlay — subtle blue (player) or red (enemy)
-      const tintColor = faction === 'player' ? 0x4488FF : 0xFF4444;
+      // Faction tint overlay — subtle blue (player) or red/orange (enemy)
+      const settings = SettingsManager.getInstance();
+      const cbMode = settings.get('colorblindMode');
+      const enemyAccent = cbMode !== 'none' ? 0xFFAA00 : 0xFF4444;
+      const tintColor = faction === 'player' ? 0x4488FF : enemyAccent;
       gfx.fillStyle(tintColor, 0.12);
       gfx.fillRect(0, 0, w, h);
 

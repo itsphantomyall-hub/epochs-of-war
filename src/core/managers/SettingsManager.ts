@@ -40,7 +40,6 @@ export class SettingsManager {
   private settings: GameSettings = { ...DEFAULT_SETTINGS };
 
   constructor() {
-    if (instance) return instance;
     this.settings = { ...DEFAULT_SETTINGS };
     this.load();
     instance = this;

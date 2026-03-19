@@ -20,6 +20,7 @@ export class AudioManager {
   private musicController: MusicController;
   private settings: SettingsManager;
   private contextResumed: boolean = false;
+  private pendingMusicTimeout: ReturnType<typeof setTimeout> | null = null;
 
   private constructor() {
     this.musicController = new MusicController();
@@ -120,6 +121,12 @@ export class AudioManager {
 
   /** Start age-appropriate ambient music loop. */
   playMusic(age: number): void {
+    // Cancel any pending music start to avoid race conditions on rapid evolution
+    if (this.pendingMusicTimeout) {
+      clearTimeout(this.pendingMusicTimeout);
+      this.pendingMusicTimeout = null;
+    }
+
     const ctx = this.ensureContext();
     if (!ctx || !this.musicGain) return;
 
@@ -127,7 +134,8 @@ export class AudioManager {
     this.musicController.stop();
 
     // Small delay to let previous fade finish
-    setTimeout(() => {
+    this.pendingMusicTimeout = setTimeout(() => {
+      this.pendingMusicTimeout = null;
       if (this.ctx && this.musicGain) {
         this.musicController.startAge(this.ctx, this.musicGain, age);
       }
@@ -136,6 +144,10 @@ export class AudioManager {
 
   /** Stop current music with 500ms fadeout. */
   stopMusic(): void {
+    if (this.pendingMusicTimeout) {
+      clearTimeout(this.pendingMusicTimeout);
+      this.pendingMusicTimeout = null;
+    }
     this.musicController.stop();
   }
 }

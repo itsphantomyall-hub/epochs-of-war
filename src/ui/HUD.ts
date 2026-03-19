@@ -163,9 +163,9 @@ export class HUD extends Phaser.Scene {
     const hpX = 12;
     const hpY = h / 2;
     this.playerHpBarBg = this.add.rectangle(hpX + 50, hpY, 100, 14, 0x333333).setOrigin(0.5);
-    this.playerHpBarFill = this.add.rectangle(hpX + 50, hpY, 100, 14, 0x44cc44).setOrigin(0.5);
+    this.playerHpBarFill = this.add.rectangle(hpX, hpY, 100, 14, 0x44cc44).setOrigin(0, 0.5);
     this.playerHpText = this.add.text(hpX + 50, hpY, '500/500', {
-      fontSize: '10px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '12px', fontFamily: 'monospace', color: '#ffffff',
     }).setOrigin(0.5).setDepth(2);
 
     // ── Gold display ──
@@ -176,9 +176,9 @@ export class HUD extends Phaser.Scene {
     // ── XP bar (center-left) ──
     const xpX = 280;
     this.xpBarBg = this.add.rectangle(xpX + 75, hpY, 150, 14, 0x333333).setOrigin(0.5);
-    this.xpBarFill = this.add.rectangle(xpX + 75, hpY, 0, 14, 0x8844ff).setOrigin(0.5);
+    this.xpBarFill = this.add.rectangle(xpX, hpY, 0, 14, 0x8844ff).setOrigin(0, 0.5);
     this.xpText = this.add.text(xpX + 75, hpY, '0/500', {
-      fontSize: '10px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '12px', fontFamily: 'monospace', color: '#ffffff',
     }).setOrigin(0.5).setDepth(2);
 
     // XP bar glow graphics (drawn behind XP bar when full)
@@ -202,10 +202,16 @@ export class HUD extends Phaser.Scene {
     // ── Enemy base HP bar (right) ──
     const eHpX = width - 112;
     this.enemyHpBarBg = this.add.rectangle(eHpX, hpY, 100, 14, 0x333333).setOrigin(0.5);
-    this.enemyHpBarFill = this.add.rectangle(eHpX, hpY, 100, 14, 0xcc4444).setOrigin(0.5);
+    this.enemyHpBarFill = this.add.rectangle(eHpX - 50, hpY, 100, 14, 0xcc4444).setOrigin(0, 0.5);
     this.enemyHpText = this.add.text(eHpX, hpY, '500/500', {
-      fontSize: '10px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '12px', fontFamily: 'monospace', color: '#ffffff',
     }).setOrigin(0.5).setDepth(2);
+
+    // ── Pause button (top-right corner, for mobile/touch) ──
+    const pauseBtn = this.add.text(width - 40, 18, '\u23F8', {
+      fontSize: '20px', fontFamily: 'monospace', color: '#ffffff',
+    }).setOrigin(0.5).setDepth(2).setInteractive({ useHandCursor: true });
+    pauseBtn.on('pointerdown', () => this.events.emit('pause-pressed'));
   }
 
   // ─────────────────────── BOTTOM BAR ───────────────────────
@@ -244,6 +250,9 @@ export class HUD extends Phaser.Scene {
           this.hoveredButtonIndex = -1;
         }
       });
+      bg.on('pointerdown', () => {
+        this.events.emit('spawn-unit', buttonIndex);
+      });
 
       const nameText = this.add.text(x, y - 14, def.name, {
         fontSize: '11px', fontFamily: 'monospace', color: '#ffffff',
@@ -254,7 +263,7 @@ export class HUD extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(2);
 
       const keyText = this.add.text(x, y + 18, `[${def.key}]`, {
-        fontSize: '10px', fontFamily: 'monospace', color: '#aaaaaa',
+        fontSize: '12px', fontFamily: 'monospace', color: '#aaaaaa',
       }).setOrigin(0.5).setDepth(2);
 
       // Cooldown overlay (invisible by default)
@@ -269,24 +278,32 @@ export class HUD extends Phaser.Scene {
     const evolveX = startX + 4 * (btnW + gap) + 60;
     this.evolveBtn = this.add.rectangle(evolveX, barY, 80, btnH, 0x226622, 1)
       .setStrokeStyle(2, 0x44cc44)
-      .setDepth(1);
+      .setDepth(1)
+      .setInteractive({ useHandCursor: true });
+    this.evolveBtn.on('pointerdown', () => {
+      this.events.emit('evolve-pressed');
+    });
     this.evolveBtnText = this.add.text(evolveX, barY - 6, 'EVOLVE', {
       fontSize: '12px', fontFamily: 'monospace', color: '#44ff44', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(2);
     this.evolveKeyText = this.add.text(evolveX, barY + 14, '[T]', {
-      fontSize: '10px', fontFamily: 'monospace', color: '#aaaaaa',
+      fontSize: '12px', fontFamily: 'monospace', color: '#aaaaaa',
     }).setOrigin(0.5).setDepth(2);
 
     // ── SPECIAL button ──
     const specialX = evolveX + 100;
     this.specialBtn = this.add.rectangle(specialX, barY, 80, btnH, 0x662222, 1)
       .setStrokeStyle(2, 0xcc4444)
-      .setDepth(1);
+      .setDepth(1)
+      .setInteractive({ useHandCursor: true });
+    this.specialBtn.on('pointerdown', () => {
+      this.events.emit('special-pressed');
+    });
     this.specialBtnText = this.add.text(specialX, barY - 6, 'READY', {
       fontSize: '12px', fontFamily: 'monospace', color: '#ff4444', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(2);
     this.add.text(specialX, barY + 14, '[SPACE]', {
-      fontSize: '9px', fontFamily: 'monospace', color: '#aaaaaa',
+      fontSize: '12px', fontFamily: 'monospace', color: '#aaaaaa',
     }).setOrigin(0.5).setDepth(2);
 
     // Cooldown pie chart graphics
@@ -296,14 +313,22 @@ export class HUD extends Phaser.Scene {
     const heroX = specialX + 100;
     this.heroBtn1 = this.add.rectangle(heroX, barY, 44, btnH, 0x444422, 1)
       .setStrokeStyle(2, 0x888844)
-      .setDepth(1);
+      .setDepth(1)
+      .setInteractive({ useHandCursor: true });
+    this.heroBtn1.on('pointerdown', () => {
+      this.events.emit('hero-ability', 0);
+    });
     this.heroBtn1Text = this.add.text(heroX, barY, '[1]', {
       fontSize: '12px', fontFamily: 'monospace', color: '#cccc44',
     }).setOrigin(0.5).setDepth(2);
 
     this.heroBtn2 = this.add.rectangle(heroX + 52, barY, 44, btnH, 0x444422, 1)
       .setStrokeStyle(2, 0x888844)
-      .setDepth(1);
+      .setDepth(1)
+      .setInteractive({ useHandCursor: true });
+    this.heroBtn2.on('pointerdown', () => {
+      this.events.emit('hero-ability', 1);
+    });
     this.heroBtn2Text = this.add.text(heroX + 52, barY, '[2]', {
       fontSize: '12px', fontFamily: 'monospace', color: '#cccc44',
     }).setOrigin(0.5).setDepth(2);
@@ -349,7 +374,7 @@ export class HUD extends Phaser.Scene {
 
     // Player base HP — with damage flash
     const playerHpRatio = Math.max(0, player.baseHp / player.baseMaxHp);
-    this.playerHpBarFill.scaleX = playerHpRatio;
+    this.playerHpBarFill.setSize(100 * playerHpRatio, 14);
     this.playerHpText.setText(`${Math.ceil(player.baseHp)}/${player.baseMaxHp}`);
     if (this.playerHpFlashTimer > 0) {
       this.playerHpFlashTimer -= delta / 1000;
@@ -361,7 +386,7 @@ export class HUD extends Phaser.Scene {
     // XP bar
     const xpToNext = this.getXpToNext(player.currentAge);
     const xpRatio = xpToNext > 0 ? Math.min(player.xp / xpToNext, 1) : 1;
-    this.xpBarFill.scaleX = xpRatio;
+    this.xpBarFill.setSize(150 * xpRatio, 14);
     this.xpText.setText(`${Math.floor(player.xp)}/${xpToNext}`);
 
     // XP bar glow when full (can evolve)
@@ -392,7 +417,7 @@ export class HUD extends Phaser.Scene {
 
     // Enemy base HP
     const enemyHpRatio = Math.max(0, enemy.baseHp / enemy.baseMaxHp);
-    this.enemyHpBarFill.scaleX = enemyHpRatio;
+    this.enemyHpBarFill.setSize(100 * enemyHpRatio, 14);
     this.enemyHpText.setText(`${Math.ceil(enemy.baseHp)}/${enemy.baseMaxHp}`);
   }
 

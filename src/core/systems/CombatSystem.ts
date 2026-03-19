@@ -43,6 +43,8 @@ export class CombatSystem {
   }
 
   update(world: World, deltaTime: number): void {
+    // Read game time ONCE at the start to avoid repeated queries in the inner loop
+    const currentTime = this.getCurrentTime(world);
     const combatants = world.query('Position', 'Combat', 'Faction');
 
     for (let i = 0; i < combatants.length; i++) {
@@ -74,7 +76,7 @@ export class CombatSystem {
 
       // Check attack cooldown
       const attackInterval = 1 / combat.attackSpeed;
-      if (combat.lastAttackTime + attackInterval > this.getCurrentTime(world)) continue;
+      if (combat.lastAttackTime + attackInterval > currentTime) continue;
 
       // Calculate damage with counter bonus
       let damage = combat.damage;
@@ -104,7 +106,7 @@ export class CombatSystem {
       }
 
       // Record attack time
-      combat.lastAttackTime = this.getCurrentTime(world);
+      combat.lastAttackTime = currentTime;
     }
   }
 

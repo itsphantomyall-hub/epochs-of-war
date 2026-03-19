@@ -196,6 +196,7 @@ export class GameScene extends Phaser.Scene {
   // ── Settings ──
   private settingsManager!: SettingsManager;
   private enemyColor: number = 0xff4444;
+  private playerColor: number = 0x4488ff;
 
   // ── Screen effects (delegated to JuiceManager) ──
   public screenShakeEnabled: boolean = true;
@@ -273,13 +274,22 @@ export class GameScene extends Phaser.Scene {
 
     // ── Colorblind mode: adjust enemy color ──
     const cbMode = this.settingsManager.get('colorblindMode');
-    if (cbMode !== 'none') {
-      // Change enemy color from red to yellow/orange for deuteranopia/protanopia
-      // This makes player (blue) vs enemy (yellow) distinguishable
-      this.enemyColor = 0xFFAA00;
-    } else {
-      this.enemyColor = 0xFF4444;
+    switch (cbMode) {
+      case 'deuteranopia': // Red-green: change red to orange
+        this.enemyColor = 0xFFAA00;
+        break;
+      case 'protanopia': // Red weakness: change red to magenta/purple
+        this.enemyColor = 0xCC66FF;
+        break;
+      case 'tritanopia': // Blue-yellow: change blue player to green, keep red enemy
+        this.playerColor = 0x44FF44;
+        this.enemyColor = 0xFF4444;
+        break;
+      default:
+        this.enemyColor = 0xFF4444;
+        break;
     }
+    FACTION_COLORS.player = this.playerColor;
 
     // ── Instantiate ECS engine ──
     this.configLoader = new ConfigLoader();
@@ -761,6 +771,18 @@ export class GameScene extends Phaser.Scene {
         this.audioManager.playSFX('spawn');
       }
     });
+
+    // ── HUD touch/click events (mobile support) ──
+    const hudScene = this.scene.get('HUD');
+    if (hudScene) {
+      hudScene.events.on('spawn-unit', (index: number) => {
+        this.spawnUnitByIndex(index);
+      });
+      hudScene.events.on('evolve-pressed', () => this.tryEvolve());
+      hudScene.events.on('special-pressed', () => this.trySpecial());
+      hudScene.events.on('hero-ability', (index: number) => this.useHeroAbility(index));
+      hudScene.events.on('pause-pressed', () => this.togglePause());
+    }
   }
 
   /** Get age accent color for particle tinting. */
@@ -861,7 +883,7 @@ export class GameScene extends Phaser.Scene {
     // Hidden fallback rectangles (keep for collapse logic)
     this.playerBase = this.add.rectangle(
       GameScene.PLAYER_BASE_X, baseY, baseW, baseH, 0x2244aa
-    ).setStrokeStyle(3, 0x4488ff).setDepth(0).setVisible(false);
+    ).setStrokeStyle(3, this.playerColor).setDepth(0).setVisible(false);
 
     this.enemyBase = this.add.rectangle(
       GameScene.ENEMY_BASE_X, baseY, baseW, baseH, 0xaa2222
@@ -881,7 +903,7 @@ export class GameScene extends Phaser.Scene {
       GameScene.PLAYER_BASE_X, baseY - baseH / 2 - 14, 2, 28, 0xcccccc
     ).setDepth(1);
     this.playerFlag = this.add.rectangle(
-      GameScene.PLAYER_BASE_X + 6, baseY - baseH / 2 - 22, 12, 8, 0x4488ff
+      GameScene.PLAYER_BASE_X + 6, baseY - baseH / 2 - 22, 12, 8, this.playerColor
     ).setDepth(2);
 
     // Flag pole on enemy base
@@ -1071,43 +1093,11 @@ export class GameScene extends Phaser.Scene {
     if (!this.keys) return;
 
     // Unit spawns (Q/W/E/R → unit slots 0-3 of current age)
-    const currentUnits = this.playerAgeSystem.getAvailableUnits();
     const spawnKeys = [this.keys.Q, this.keys.W, this.keys.E, this.keys.R];
-    const unitIds = this.playerAgeSystem.getAvailableUnitIds();
 
-    for (let i = 0; i < Math.min(4, currentUnits.length); i++) {
+    for (let i = 0; i < 4; i++) {
       if (Phaser.Input.Keyboard.JustDown(spawnKeys[i])) {
-        const unitConfig = currentUnits[i];
-        const cost = unitConfig.stats.cost;
-
-        if (this.playerEconomy.canAfford(cost)) {
-          this.playerEconomy.spend(cost);
-          this.enqueueSpawn('player', unitIds[i], unitConfig);
-
-          // Trigger HUD cooldown
-          const hud = this.scene.get('HUD') as HUD | undefined;
-          hud?.startUnitCooldown(i, unitConfig.stats.spawnTime);
-
-          // Show gold spent floating text
-          this.floatingText.spawn(
-            GameScene.PLAYER_BASE_X + 60,
-            GameScene.GROUND_Y - 40,
-            `-${cost}g`,
-            '#ff8888'
-          );
-
-          // Unit spawn flash
-          this.particles.spawnFlash(
-            GameScene.PLAYER_BASE_X + 40,
-            GameScene.GROUND_Y - 12
-          );
-
-          // Spawn dust
-          this.particles.spawnDust(
-            GameScene.PLAYER_BASE_X + 40,
-            GameScene.GROUND_Y
-          );
-        }
+        this.spawnUnitByIndex(i);
       }
     }
 
@@ -1123,55 +1113,81 @@ export class GameScene extends Phaser.Scene {
 
     // Hero abilities (1/2 keys)
     if (Phaser.Input.Keyboard.JustDown(this.keys.ONE)) {
-      const used = this.heroSystem.useAbility(this.gameManager.world, 'player', 0);
-      if (used) {
-        this.audioManager.playSFX('ability');
-        const heroId = this.heroManager.getHero('player');
-        if (heroId !== null) {
-          const hero = this.gameManager.world.getComponent<HeroComponent>(heroId, 'Hero');
-          if (hero) {
-            const hud = this.scene.get('HUD') as HUD | undefined;
-            hud?.startHeroCooldown(0, hero.ability1MaxCooldown);
-          }
-          // Hero ability juice: hit-stop + magic burst at hero position
-          const pos = this.gameManager.world.getComponent<Position>(heroId, 'Position');
-          if (pos) {
-            const sx = this.ecsXToScreen(pos.x);
-            const sy = GameScene.GROUND_Y - 20;
-            this.juice.hitStopHeroAbility();
-            this.juice.shakeMedium();
-            this.particles.spawnMagicBurst(sx, sy, this.getAgeAccentColor(this.playerAgeSystem.getCurrentAge()));
-          }
-        }
-      }
+      this.useHeroAbility(0);
     }
     if (Phaser.Input.Keyboard.JustDown(this.keys.TWO)) {
-      const used = this.heroSystem.useAbility(this.gameManager.world, 'player', 1);
-      if (used) {
-        this.audioManager.playSFX('ability');
-        const heroId = this.heroManager.getHero('player');
-        if (heroId !== null) {
-          const hero = this.gameManager.world.getComponent<HeroComponent>(heroId, 'Hero');
-          if (hero) {
-            const hud = this.scene.get('HUD') as HUD | undefined;
-            hud?.startHeroCooldown(1, hero.ability2MaxCooldown);
-          }
-          // Hero ability juice
-          const pos = this.gameManager.world.getComponent<Position>(heroId, 'Position');
-          if (pos) {
-            const sx = this.ecsXToScreen(pos.x);
-            const sy = GameScene.GROUND_Y - 20;
-            this.juice.hitStopHeroAbility();
-            this.juice.shakeMedium();
-            this.particles.spawnMagicBurst(sx, sy, this.getAgeAccentColor(this.playerAgeSystem.getCurrentAge()));
-          }
-        }
-      }
+      this.useHeroAbility(1);
     }
 
     // Pause
     if (Phaser.Input.Keyboard.JustDown(this.keys.ESC)) {
       this.togglePause();
+    }
+  }
+
+  /** Spawn a unit by slot index (0-3). Used by both keyboard and touch input. */
+  private spawnUnitByIndex(index: number): void {
+    const currentUnits = this.playerAgeSystem.getAvailableUnits();
+    const unitIds = this.playerAgeSystem.getAvailableUnitIds();
+
+    if (index < 0 || index >= Math.min(4, currentUnits.length)) return;
+
+    const unitConfig = currentUnits[index];
+    const cost = unitConfig.stats.cost;
+
+    if (this.playerEconomy.canAfford(cost)) {
+      this.playerEconomy.spend(cost);
+      this.enqueueSpawn('player', unitIds[index], unitConfig);
+
+      // Trigger HUD cooldown
+      const hud = this.scene.get('HUD') as HUD | undefined;
+      hud?.startUnitCooldown(index, unitConfig.stats.spawnTime);
+
+      // Show gold spent floating text
+      this.floatingText.spawn(
+        GameScene.PLAYER_BASE_X + 60,
+        GameScene.GROUND_Y - 40,
+        `-${cost}g`,
+        '#ff8888'
+      );
+
+      // Unit spawn flash
+      this.particles.spawnFlash(
+        GameScene.PLAYER_BASE_X + 40,
+        GameScene.GROUND_Y - 12
+      );
+
+      // Spawn dust
+      this.particles.spawnDust(
+        GameScene.PLAYER_BASE_X + 40,
+        GameScene.GROUND_Y
+      );
+    }
+  }
+
+  /** Use a hero ability by index (0 or 1). Used by both keyboard and touch input. */
+  private useHeroAbility(abilityIndex: number): void {
+    const used = this.heroSystem.useAbility(this.gameManager.world, 'player', abilityIndex);
+    if (used) {
+      this.audioManager.playSFX('ability');
+      const heroId = this.heroManager.getHero('player');
+      if (heroId !== null) {
+        const hero = this.gameManager.world.getComponent<HeroComponent>(heroId, 'Hero');
+        if (hero) {
+          const hud = this.scene.get('HUD') as HUD | undefined;
+          const maxCooldown = abilityIndex === 0 ? hero.ability1MaxCooldown : hero.ability2MaxCooldown;
+          hud?.startHeroCooldown(abilityIndex, maxCooldown);
+        }
+        // Hero ability juice: hit-stop + magic burst at hero position
+        const pos = this.gameManager.world.getComponent<Position>(heroId, 'Position');
+        if (pos) {
+          const sx = this.ecsXToScreen(pos.x);
+          const sy = GameScene.GROUND_Y - 20;
+          this.juice.hitStopHeroAbility();
+          this.juice.shakeMedium();
+          this.particles.spawnMagicBurst(sx, sy, this.getAgeAccentColor(this.playerAgeSystem.getCurrentAge()));
+        }
+      }
     }
   }
 
@@ -1345,14 +1361,14 @@ export class GameScene extends Phaser.Scene {
           });
           break;
         case 'scorched_earth':
-          // Both bases lose HP over time after 5 minutes
+          // Both bases lose HP over time after 5 minutes, capped at 5 DPS
           this.time.addEvent({
             delay: 1000,
             loop: true,
             callback: () => {
               const elapsed = this.gameState.elapsedTime;
               if (elapsed > 300) {
-                const dmg = Math.floor(elapsed / 60);
+                const dmg = Math.min(5, Math.floor((elapsed - 300) / 120) + 1);
                 this.gameState.player.baseHp = Math.max(0, this.gameState.player.baseHp - dmg);
                 this.gameState.enemy.baseHp = Math.max(0, this.gameState.enemy.baseHp - dmg);
                 this.gameManager.setPlayerBaseHp(this.gameState.player.baseHp);
@@ -1814,8 +1830,8 @@ export class GameScene extends Phaser.Scene {
   private syncWeatherToHUD(): void {
     const weather = this.weatherSystem.getCurrentWeather();
     const hud = this.scene.get('HUD') as HUD | undefined;
-    if (hud && (hud as any).updateWeatherText) {
-      (hud as any).updateWeatherText(weather.weatherName);
+    if (hud) {
+      hud.updateWeatherText(weather.weatherName);
     }
   }
 
@@ -1881,13 +1897,11 @@ export class GameScene extends Phaser.Scene {
 
     if (heroId !== null && this.gameManager.world.isAlive(heroId)) {
       const health = this.gameManager.world.getComponent<Health>(heroId, 'Health');
-      if (health && (hud as any).updateHeroHp) {
-        (hud as any).updateHeroHp(health.current, health.max);
+      if (health) {
+        hud.updateHeroHp(health.current, health.max);
       }
     } else {
-      if ((hud as any).updateHeroHp) {
-        (hud as any).updateHeroHp(0, 0);
-      }
+      hud.updateHeroHp(0, 0);
     }
   }
 
@@ -2038,35 +2052,87 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true });
 
     menuBtn.on('pointerdown', () => {
-      // Clean up all entity sprites and rectangles
-      for (const [, sprite] of this.entitySprites) {
-        sprite.destroy();
-      }
-      this.entitySprites.clear();
-      for (const [, rect] of this.entityRects) {
-        rect.destroy();
-      }
-      this.entityRects.clear();
-      for (const [, img] of this.turretImages) {
-        img.destroy();
-      }
-      this.turretImages.clear();
-      for (const [, rect] of this.turretRects) {
-        rect.destroy();
-      }
-      this.turretRects.clear();
-
-      // Clean up hero visuals
-      if (this.heroImage) { this.heroImage.destroy(); this.heroImage = null; }
-      if (this.heroGlow) { this.heroGlow.destroy(); this.heroGlow = null; }
-      if (this.heroRect) { this.heroRect.destroy(); this.heroRect = null; }
-
-      // Clean up particles and juice
-      this.particles.destroy();
-      this.juice.destroy();
-
-      this.scene.stop('HUD');
+      // shutdown() is called automatically by Phaser when scene.start() triggers
       this.scene.start(targetScene);
     });
+  }
+
+  /**
+   * Phaser lifecycle method — called automatically when the scene stops or restarts.
+   * Cleans up all event listeners, timers, audio, and Phaser objects to prevent memory leaks.
+   */
+  shutdown(): void {
+    // Cancel all campaign modifier timers
+    this.time.removeAllEvents();
+
+    // Remove custom event listeners from GameManager
+    if (this.gameManager?.events) {
+      this.gameManager.events.clear();
+    }
+
+    // Remove HUD event listeners
+    const hudScene = this.scene.get('HUD');
+    if (hudScene) {
+      hudScene.events.removeAllListeners();
+    }
+
+    // Stop music
+    if (this.audioManager) {
+      this.audioManager.stopMusic();
+    }
+
+    // Destroy tracked Phaser objects
+    this.entitySprites?.forEach(sprite => sprite.destroy());
+    this.entitySprites?.clear();
+    this.entityRects?.forEach(rect => rect.destroy());
+    this.entityRects?.clear();
+    this.turretImages?.forEach(img => img.destroy());
+    this.turretImages?.clear();
+    this.turretRects?.forEach(rect => rect.destroy());
+    this.turretRects?.clear();
+
+    // Destroy hero visuals
+    this.heroImage?.destroy();
+    this.heroGlow?.destroy();
+    this.heroRect?.destroy();
+
+    // Destroy terrain visuals
+    if (this.terrainZoneGraphics) {
+      for (const gfx of this.terrainZoneGraphics) gfx.destroy();
+    }
+    if (this.terrainZoneLabels) {
+      for (const label of this.terrainZoneLabels) label.destroy();
+    }
+
+    // Destroy weather overlay
+    this.weatherOverlay?.destroy();
+
+    // Destroy clouds
+    if (this.clouds) {
+      for (const cloud of this.clouds) cloud.rect.destroy();
+    }
+
+    // Destroy ground details
+    if (this.groundDetails) {
+      for (const detail of this.groundDetails) detail.destroy();
+    }
+
+    // Destroy base objects
+    this.playerBase?.destroy();
+    this.enemyBase?.destroy();
+    this.playerFlag?.destroy();
+    this.enemyFlag?.destroy();
+    this.baseCrackGraphics?.destroy();
+    this.battleLine?.destroy();
+    this.ground?.destroy();
+
+    // Clean up juice manager
+    this.juice?.destroy();
+
+    // Clean up particles
+    this.particles?.destroy?.();
+
+    // Stop HUD scene
+    this.scene.stop('HUD');
   }
 }

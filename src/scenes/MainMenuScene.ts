@@ -133,7 +133,7 @@ export class MainMenuScene extends Phaser.Scene {
 
       // Description below
       this.add.text(x, 280, mode.desc, {
-        fontSize: '10px',
+        fontSize: '13px',
         fontFamily: 'monospace',
         color: '#666688',
       }).setOrigin(0.5);

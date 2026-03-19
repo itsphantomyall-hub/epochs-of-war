@@ -28,13 +28,15 @@ export class ConfigLoader {
   /** Validate that all unit references in ages actually exist. */
   private validate(): void {
     const unitIds = new Set(Object.keys(this.units));
+    let errorCount = 0;
 
     for (const [ageNum, ageConfig] of Object.entries(this.ages)) {
       for (const unitId of ageConfig.units) {
         if (!unitIds.has(unitId)) {
-          console.warn(
+          console.error(
             `[ConfigLoader] Age ${ageNum} references unknown unit "${unitId}"`
           );
+          errorCount++;
         }
       }
 
@@ -44,6 +46,10 @@ export class ConfigLoader {
           `[ConfigLoader] Age ${ageNum} has invalid xpToNext: ${ageConfig.xpToNext}`
         );
       }
+    }
+
+    if (errorCount > 3) {
+      throw new Error(`[ConfigLoader] ${errorCount} config validation errors. Check console.`);
     }
   }
 
