@@ -35,6 +35,8 @@ import { TurretSystem } from '../core/systems/TurretSystem';
 import { AbilitySystem, AbilityConfigMap } from '../core/systems/AbilitySystem';
 import { LifetimeSystem } from '../core/systems/LifetimeSystem';
 import { AIDirector, Difficulty } from '../ai/AIDirector';
+import { SettingsManager } from '../core/managers/SettingsManager';
+import { AudioManager } from '../audio/AudioManager';
 
 // Config JSON imports
 import heroesJson from '../config/heroes.json';
@@ -92,6 +94,9 @@ const AGE_NAMES: Record<number, string> = {
  * EconomySystem, and AgeSystem for all game logic.
  */
 export class GameScene extends Phaser.Scene {
+  // ── Audio ──
+  private audioManager!: AudioManager;
+
   // ── ECS & managers ──
   private gameManager!: GameManager;
   private configLoader!: ConfigLoader;
@@ -184,6 +189,10 @@ export class GameScene extends Phaser.Scene {
   // ── Battle line indicator ──
   private battleLine!: Phaser.GameObjects.Rectangle;
 
+  // ── Settings ──
+  private settingsManager!: SettingsManager;
+  private enemyColor: number = 0xff4444;
+
   // ── Screen effects (delegated to JuiceManager) ──
   public screenShakeEnabled: boolean = true;
 
@@ -224,6 +233,19 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.gameState = createInitialGameState();
+
+    // ── Settings ──
+    this.settingsManager = SettingsManager.getInstance();
+
+    // ── Colorblind mode: adjust enemy color ──
+    const cbMode = this.settingsManager.get('colorblindMode');
+    if (cbMode !== 'none') {
+      // Change enemy color from red to yellow/orange for deuteranopia/protanopia
+      // This makes player (blue) vs enemy (yellow) distinguishable
+      this.enemyColor = 0xFFAA00;
+    } else {
+      this.enemyColor = 0xFF4444;
+    }
 
     // ── Instantiate ECS engine ──
     this.configLoader = new ConfigLoader();
@@ -431,6 +453,13 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(50, () => {
       this.pushUnitDefsToHUD();
     });
+
+    // ── Audio ──
+    this.audioManager = AudioManager.getInstance();
+    // Unlock AudioContext on first user interaction (browser autoplay policy)
+    this.input.once('pointerdown', () => this.audioManager.resumeContext());
+    // Start age-1 music
+    this.audioManager.playMusic(1);
   }
 
   // ─────────────────────── EVENT WIRING ───────────────────────
@@ -449,7 +478,9 @@ export class GameScene extends Phaser.Scene {
         if (pos) {
           const screenX = this.ecsXToScreen(pos.x);
           const screenY = GameScene.GROUND_Y - 30;
-          this.floatingText.spawnGold(screenX, screenY, reward.gold);
+          if (this.settingsManager.get('damageNumbers')) {
+            this.floatingText.spawnGold(screenX, screenY, reward.gold);
+          }
 
           // Death particles — choose effect by unit type
           const archetype = e.unitType ?? 'infantry';
@@ -471,6 +502,17 @@ export class GameScene extends Phaser.Scene {
 
         // Kill combo tracking via JuiceManager
         this.juice.recordKill();
+
+        // Audio: death SFX based on unit type
+        const deathArchetype = e.unitType ?? 'infantry';
+        if (deathArchetype === 'heavy' || deathArchetype === 'hero') {
+          this.audioManager.playSFX('explosion_large');
+        } else {
+          this.audioManager.playSFX('death');
+        }
+
+        // Audio: coin SFX for gold earned
+        this.audioManager.playSFX('coin');
 
         // Reduce ability cooldown on kill
         this.abilitySystem.onKill('player');
@@ -494,6 +536,9 @@ export class GameScene extends Phaser.Scene {
           }
           this.particles.spawnDustCloud(screenX, GameScene.GROUND_Y);
         }
+
+        // Audio: death SFX for player unit
+        this.audioManager.playSFX('death');
 
         // Reduce ability cooldown on kill for enemy
         this.abilitySystem.onKill('enemy');
@@ -521,7 +566,21 @@ export class GameScene extends Phaser.Scene {
 
       const screenX = this.ecsXToScreen(pos.x);
       const screenY = GameScene.GROUND_Y - 20;
-      this.floatingText.spawnDamage(screenX, screenY, e.damage);
+      if (this.settingsManager.get('damageNumbers')) {
+        this.floatingText.spawnDamage(screenX, screenY, e.damage);
+      }
+
+      // Counter indicator: show "+50%" floating text on counter-bonus hits
+      if (e.isCounter && this.settingsManager.get('counterIndicators')) {
+        this.floatingText.spawn(screenX + 15, screenY - 10, '+50%', '#ff8800');
+      }
+
+      // Audio: hit SFX based on damage amount
+      if (e.damage > 20) {
+        this.audioManager.playSFX('hit_heavy');
+      } else {
+        this.audioManager.playSFX('hit_light');
+      }
 
       // Determine attacker type/position for directional effects
       const attackerPos = this.gameManager.world.getComponent<Position>(e.attackerId, 'Position');
@@ -576,6 +635,9 @@ export class GameScene extends Phaser.Scene {
         this.gameState.enemy.baseHp = Math.max(0, e.remainingHp);
       }
 
+      // Audio: base hit SFX
+      this.audioManager.playSFX('hit_heavy');
+
       // Juice: hit-stop and screen shake for base hits
       this.juice.hitStopBaseHit();
       this.juice.shakeForBaseHit(e.damage);
@@ -595,11 +657,26 @@ export class GameScene extends Phaser.Scene {
       this.gameState.isGameOver = true;
       this.gameState.winner = e.winner;
 
+      // Audio: victory/defeat SFX + stop music
+      if (e.winner === 'player') {
+        this.audioManager.playSFX('victory');
+      } else {
+        this.audioManager.playSFX('defeat');
+      }
+      this.audioManager.stopMusic();
+
       // Base destruction collapse effect
       if (e.winner === 'player') {
         this.playBaseCollapse('enemy');
       } else {
         this.playBaseCollapse('player');
+      }
+    });
+
+    // Spawn events: play spawn SFX for player units
+    this.gameManager.events.on('spawn', (e) => {
+      if (e.faction === 'player') {
+        this.audioManager.playSFX('spawn');
       }
     });
   }
@@ -706,7 +783,7 @@ export class GameScene extends Phaser.Scene {
 
     this.enemyBase = this.add.rectangle(
       GameScene.ENEMY_BASE_X, baseY, baseW, baseH, 0xaa2222
-    ).setStrokeStyle(3, 0xff4444).setDepth(0).setVisible(false);
+    ).setStrokeStyle(3, this.enemyColor).setDepth(0).setVisible(false);
 
     // Use procedural base textures
     const playerBaseKey = this.baseRenderer.getTextureKey(1, 'player');
@@ -730,7 +807,7 @@ export class GameScene extends Phaser.Scene {
       GameScene.ENEMY_BASE_X, baseY - baseH / 2 - 14, 2, 28, 0xcccccc
     ).setDepth(1);
     this.enemyFlag = this.add.rectangle(
-      GameScene.ENEMY_BASE_X + 6, baseY - baseH / 2 - 22, 12, 8, 0xff4444
+      GameScene.ENEMY_BASE_X + 6, baseY - baseH / 2 - 22, 12, 8, this.enemyColor
     ).setDepth(2);
 
     // Crack graphics overlay
@@ -966,6 +1043,7 @@ export class GameScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.keys.ONE)) {
       const used = this.heroSystem.useAbility(this.gameManager.world, 'player', 0);
       if (used) {
+        this.audioManager.playSFX('ability');
         const heroId = this.heroManager.getHero('player');
         if (heroId !== null) {
           const hero = this.gameManager.world.getComponent<HeroComponent>(heroId, 'Hero');
@@ -988,6 +1066,7 @@ export class GameScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.keys.TWO)) {
       const used = this.heroSystem.useAbility(this.gameManager.world, 'player', 1);
       if (used) {
+        this.audioManager.playSFX('ability');
         const heroId = this.heroManager.getHero('player');
         if (heroId !== null) {
           const hero = this.gameManager.world.getComponent<HeroComponent>(heroId, 'Hero');
@@ -1104,6 +1183,10 @@ export class GameScene extends Phaser.Scene {
         const ageName = AGE_NAMES[this.gameState.player.currentAge] ?? `Age ${this.gameState.player.currentAge}`;
         this.playEvolutionTransition(ageName);
 
+        // Audio: evolve SFX + start new age music
+        this.audioManager.playSFX('evolve');
+        this.audioManager.playMusic(this.playerAgeSystem.getCurrentAge());
+
         // Update weather system max age
         this.weatherSystem.setMaxAge(this.playerAgeSystem.getCurrentAge());
 
@@ -1136,6 +1219,9 @@ export class GameScene extends Phaser.Scene {
 
     const hud = this.scene.get('HUD') as HUD | undefined;
     hud?.startSpecialCooldown(cooldown);
+
+    // Audio: special fire SFX
+    this.audioManager.playSFX('special_fire');
 
     // Screen shake + hit-stop for special attack
     this.juice.shakeMedium();
@@ -1191,78 +1277,6 @@ export class GameScene extends Phaser.Scene {
     }));
     const hud = this.scene.get('HUD') as HUD | undefined;
     hud?.updateUnitDefs(defs);
-  }
-
-  // ─────────────────────── ENEMY AI ───────────────────────
-
-  private lastEnemySpawnTime = 0;
-
-  private updateEnemyAI(time: number): void {
-    const spawnInterval: Record<string, number> = { easy: 4000, normal: 3000, hard: 2000 };
-    const interval = spawnInterval[this.difficulty] ?? 3000;
-
-    if (time - this.lastEnemySpawnTime > interval) {
-      this.lastEnemySpawnTime = time;
-
-      // Pick from enemy's current age roster
-      const units = this.enemyAgeSystem.getAvailableUnits();
-      const unitIds = this.enemyAgeSystem.getAvailableUnitIds();
-
-      if (units.length > 0) {
-        const idx = Math.floor(Math.random() * units.length);
-        const unitConfig = units[idx];
-        const cost = unitConfig.stats.cost;
-
-        // Enemy AI checks affordability
-        if (this.enemyEconomy.canAfford(cost)) {
-          this.enemyEconomy.spend(cost);
-          this.enqueueSpawn('enemy', unitIds[idx], unitConfig);
-
-          // Enemy spawn dust
-          this.particles.spawnDust(
-            GameScene.ENEMY_BASE_X - 40,
-            GameScene.GROUND_Y
-          );
-        } else {
-          // Fallback: try to spawn the cheapest unit
-          const sorted = units
-            .map((u, i) => ({ u, i }))
-            .sort((a, b) => a.u.stats.cost - b.u.stats.cost);
-          for (const entry of sorted) {
-            if (this.enemyEconomy.canAfford(entry.u.stats.cost)) {
-              this.enemyEconomy.spend(entry.u.stats.cost);
-              this.enqueueSpawn('enemy', unitIds[entry.i], entry.u);
-
-              this.particles.spawnDust(
-                GameScene.ENEMY_BASE_X - 40,
-                GameScene.GROUND_Y
-              );
-              break;
-            }
-          }
-        }
-      }
-
-      // Enemy AI evolves when it can
-      if (this.enemyAgeSystem.canEvolve()) {
-        const newAgeConfig = this.enemyAgeSystem.evolve();
-        if (newAgeConfig) {
-          const newBaseHp = this.enemyAgeSystem.getBaseHp();
-          // Apply difficulty multiplier
-          const diffMult = ({ easy: 0.7, normal: 1, hard: 1.4 } as Record<string, number>)[this.difficulty] ?? 1;
-          const adjustedMax = Math.round(newBaseHp * diffMult);
-          const hpGain = adjustedMax - this.gameState.enemy.baseMaxHp;
-          this.gameState.enemy.baseMaxHp = adjustedMax;
-          this.gameState.enemy.baseHp = Math.min(
-            this.gameState.enemy.baseHp + hpGain,
-            adjustedMax
-          );
-          // Keep GameManager in sync with the new enemy base HP
-          this.gameManager.setEnemyBaseHp(this.gameState.enemy.baseHp);
-          this.gameState.enemy.currentAge = this.enemyAgeSystem.getCurrentAge();
-        }
-      }
-    }
   }
 
   // ─────────────────────── GAME LOOP ───────────────────────
@@ -1404,6 +1418,21 @@ export class GameScene extends Phaser.Scene {
       : 1;
     this.juice.updateLowHpWarning(hpPct, deltaSec);
 
+    // Update background parallax based on battle center
+    if (this.backgroundRenderer) {
+      const units = this.gameManager.world.query('Position');
+      let avgX = 640; // default center
+      if (units.length > 0) {
+        let total = 0;
+        for (const id of units) {
+          const pos = this.gameManager.world.getComponent<Position>(id, 'Position');
+          if (pos) total += pos.x;
+        }
+        avgX = this.ecsXToScreen(total / units.length);
+      }
+      this.backgroundRenderer.updateParallax(avgX);
+    }
+
     // Update particles
     this.particles.update(deltaSec);
 
@@ -1538,7 +1567,7 @@ export class GameScene extends Phaser.Scene {
         }
       } else {
         // Fallback: colored rectangle
-        const color = FACTION_COLORS[faction.faction] ?? 0xffffff;
+        const color = faction.faction === 'enemy' ? this.enemyColor : (FACTION_COLORS[faction.faction] ?? 0xffffff);
         let rect = this.entityRects.get(entityId);
         if (!rect) {
           rect = this.add.rectangle(screenX, screenY, w, h, color)

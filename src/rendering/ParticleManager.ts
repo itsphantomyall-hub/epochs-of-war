@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { SettingsManager } from '../core/managers/SettingsManager';
 
 /**
  * A single particle tracked by the ParticleManager.
@@ -120,6 +121,17 @@ export class ParticleManager {
 
   // ─────────────────────── UTILITY ───────────────────────
 
+  /** Get the particle count multiplier based on the particleDensity setting. */
+  private getDensityMultiplier(): number {
+    const density = SettingsManager.getInstance().get('particleDensity');
+    return density === 'low' ? 0.3 : density === 'medium' ? 0.6 : 1.0;
+  }
+
+  /** Scale a particle count by the density setting, ensuring at least 1. */
+  private scaleCount(count: number): number {
+    return Math.max(1, Math.floor(count * this.getDensityMultiplier()));
+  }
+
   /** Pick a random item from an array. */
   private pick<T>(arr: T[]): T {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -136,7 +148,7 @@ export class ParticleManager {
    * 1. Melee Hit — 3-5 white + accent color particles, radiate from impact, 200ms.
    */
   spawnMeleeHit(x: number, y: number, ageAccentColor: number = 0xffffff): void {
-    const count = 3 + Math.floor(Math.random() * 3);
+    const count = this.scaleCount(3 + Math.floor(Math.random() * 3));
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 60 + Math.random() * 80;
@@ -151,7 +163,7 @@ export class ParticleManager {
    * 2. Blood Splash — 4-6 red squares, scatter in hit direction, 300ms.
    */
   spawnBloodSplash(x: number, y: number, attackerDirection: number = -1): void {
-    const count = 4 + Math.floor(Math.random() * 3);
+    const count = this.scaleCount(4 + Math.floor(Math.random() * 3));
     for (let i = 0; i < count; i++) {
       // Bias velocity toward attacker facing direction
       const dirBias = attackerDirection * (30 + Math.random() * 50);
@@ -166,7 +178,7 @@ export class ParticleManager {
    * 3. Ranged Impact — 2-4 yellow/orange sparks flying upward, 150ms.
    */
   spawnRangedImpact(x: number, y: number): void {
-    const count = 2 + Math.floor(Math.random() * 3);
+    const count = this.scaleCount(2 + Math.floor(Math.random() * 3));
     for (let i = 0; i < count; i++) {
       const vx = (Math.random() - 0.5) * 60;
       const vy = -60 - Math.random() * 80;
@@ -179,7 +191,7 @@ export class ParticleManager {
    * 4. Small Explosion — 8-12 particles in orange/yellow/grey ring, 400ms.
    */
   spawnSmallExplosion(x: number, y: number): void {
-    const count = 8 + Math.floor(Math.random() * 5);
+    const count = this.scaleCount(8 + Math.floor(Math.random() * 5));
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
       const speed = 50 + Math.random() * 60;
@@ -201,7 +213,7 @@ export class ParticleManager {
    * Caller should also trigger screen shake.
    */
   spawnLargeExplosion(x: number, y: number): void {
-    const count = 12 + Math.floor(Math.random() * 5);
+    const count = this.scaleCount(12 + Math.floor(Math.random() * 5));
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.3;
       const speed = (60 + Math.random() * 100);
@@ -228,7 +240,7 @@ export class ParticleManager {
    * 6. Dust Cloud — 3-4 brownish circles that expand and fade, 500ms.
    */
   spawnDustCloud(x: number, y: number, color?: number): void {
-    const count = 3 + Math.floor(Math.random() * 2);
+    const count = this.scaleCount(3 + Math.floor(Math.random() * 2));
     for (let i = 0; i < count; i++) {
       const vx = (Math.random() - 0.5) * 30;
       const vy = -10 - Math.random() * 20;
@@ -245,7 +257,7 @@ export class ParticleManager {
    * 7. Magic Burst — 8-10 colored particles in spiral/ring expanding outward, 400ms.
    */
   spawnMagicBurst(x: number, y: number, color: number): void {
-    const count = 8 + Math.floor(Math.random() * 3);
+    const count = this.scaleCount(8 + Math.floor(Math.random() * 3));
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count;
       const speed = 40 + Math.random() * 30;
@@ -268,7 +280,7 @@ export class ParticleManager {
    * 8. Evolution Celebration — 20-30 gold + age-palette particles in fireworks, 2000ms.
    */
   spawnEvolutionCelebration(x: number, y: number, agePaletteColors?: number[]): void {
-    const count = 20 + Math.floor(Math.random() * 11);
+    const count = this.scaleCount(20 + Math.floor(Math.random() * 11));
     const colors = [0xDAA520, 0xFFD700, 0xFFCC00, ...(agePaletteColors ?? [0xffffff])];
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
@@ -295,7 +307,7 @@ export class ParticleManager {
    * 9. Muzzle Flash — 2-3 white/yellow particles in directional cone, 100ms.
    */
   spawnMuzzleFlash(x: number, y: number, direction: number = 1): void {
-    const count = 2 + Math.floor(Math.random() * 2);
+    const count = this.scaleCount(2 + Math.floor(Math.random() * 2));
     for (let i = 0; i < count; i++) {
       const spreadAngle = (Math.random() - 0.5) * 0.6; // narrow cone
       const speed = 80 + Math.random() * 60;
@@ -352,7 +364,7 @@ export class ParticleManager {
    */
   spawnFire(x: number, y: number, duration: number = 1.0): string {
     const tag = `fire_${this.nextTagId++}`;
-    const count = 3 + Math.floor(Math.random() * 3);
+    const count = this.scaleCount(3 + Math.floor(Math.random() * 3));
     for (let i = 0; i < count; i++) {
       const color = this.pick([0xff6600, 0xffaa00, 0xffcc00, 0xff3300]);
       const vx = (Math.random() - 0.5) * 15;
@@ -368,7 +380,7 @@ export class ParticleManager {
    * 13. Shield Hit — 4-6 cyan/white particles in ripple from impact, 200ms.
    */
   spawnShieldHit(x: number, y: number): void {
-    const count = 4 + Math.floor(Math.random() * 3);
+    const count = this.scaleCount(4 + Math.floor(Math.random() * 3));
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
       const speed = 50 + Math.random() * 40;
@@ -409,7 +421,7 @@ export class ParticleManager {
    * 15. Heal Glow — 5-8 green/white particles rising upward gently, 400ms.
    */
   spawnHealGlow(x: number, y: number): void {
-    const count = 5 + Math.floor(Math.random() * 4);
+    const count = this.scaleCount(5 + Math.floor(Math.random() * 4));
     for (let i = 0; i < count; i++) {
       const vx = (Math.random() - 0.5) * 20;
       const vy = -25 - Math.random() * 30;
@@ -428,7 +440,7 @@ export class ParticleManager {
    * 16. Base Debris — 15-20 particles in base color, falling with gravity, 1500ms.
    */
   spawnBaseDebris(x: number, y: number, baseColor: number = 0x808080): void {
-    const count = 15 + Math.floor(Math.random() * 6);
+    const count = this.scaleCount(15 + Math.floor(Math.random() * 6));
     for (let i = 0; i < count; i++) {
       const vx = (Math.random() - 0.5) * 80;
       const vy = -50 - Math.random() * 80;
@@ -449,7 +461,7 @@ export class ParticleManager {
 
   /** @deprecated Use spawnSmallExplosion or spawnLargeExplosion. Kept for backward compat. */
   spawnExplosion(x: number, y: number, color: number, size: number = 1): void {
-    const count = 8 + Math.floor(Math.random() * 5);
+    const count = this.scaleCount(8 + Math.floor(Math.random() * 5));
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.3;
       const speed = (60 + Math.random() * 80) * size;

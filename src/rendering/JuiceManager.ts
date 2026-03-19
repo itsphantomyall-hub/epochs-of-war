@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { SettingsManager } from '../core/managers/SettingsManager';
 
 /**
  * Screen-shake tier configuration.
@@ -97,10 +98,12 @@ export class JuiceManager {
 
   private applyShake(config: ShakeConfig, durationOverride?: number): void {
     if (!this.shakeEnabled) return;
+    const shakeIntensity = SettingsManager.getInstance().get('screenShakeIntensity');
+    if (shakeIntensity === 0) return;
     const d = durationOverride ?? config.duration;
     // Phaser camera shake: intensity is relative to viewport size
     // 1px / 1280 ~ 0.00078, 3px ~ 0.0023, 5px ~ 0.0039
-    const intensity = config.magnitude / 1280;
+    const intensity = (config.magnitude / 1280) * (shakeIntensity / 100);
     this.scene.cameras.main.shake(d, intensity);
   }
 

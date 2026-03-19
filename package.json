@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite --port 3100",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit --skipLibCheck",
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +20,7 @@
     "vite": "^8.0.0"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0"
+    "@types/node": "^25.5.0",
+    "vitest": "^4.1.0"
   }
 }

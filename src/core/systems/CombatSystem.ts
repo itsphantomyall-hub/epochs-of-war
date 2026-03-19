@@ -71,6 +71,7 @@ export class CombatSystem {
 
       // Calculate damage with counter bonus
       let damage = combat.damage;
+      let isCounter = false;
       const attackerType = world.getComponent<UnitType>(attackerId, 'UnitType');
       const targetType = world.getComponent<UnitType>(target, 'UnitType');
 
@@ -78,6 +79,7 @@ export class CombatSystem {
         const counters = COUNTER_MAP[attackerType.type];
         if (counters && counters.has(targetType.type)) {
           damage = Math.round(damage * COUNTER_BONUS);
+          isCounter = true;
         }
       }
 
@@ -90,6 +92,7 @@ export class CombatSystem {
           targetId: target,
           damage,
           remainingHp: targetHealth.current,
+          isCounter,
         });
       }
 

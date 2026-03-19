@@ -26,7 +26,7 @@ import type { Position } from '../components/Position';
 export interface GameEvents {
   spawn: { entityId: number; unitId: string; faction: 'player' | 'enemy' };
   death: { entityId: number; faction: 'player' | 'enemy'; unitType: string; unitId: string };
-  damage: { attackerId: number; targetId: number; damage: number; remainingHp: number };
+  damage: { attackerId: number; targetId: number; damage: number; remainingHp: number; isCounter?: boolean };
   baseHit: { faction: 'player' | 'enemy'; damage: number; remainingHp: number };
   gameOver: { winner: 'player' | 'enemy' };
   ageUp: { faction: 'player' | 'enemy'; newAge: number };
