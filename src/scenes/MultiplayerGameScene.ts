@@ -156,7 +156,7 @@ export class MultiplayerGameScene extends Phaser.Scene {
     // Countdown text
     this.countdownText = this.add.text(640, 300, '', {
       fontSize: '64px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
       color: '#ffdd00',
       fontStyle: 'bold',
       stroke: '#000000',
@@ -217,33 +217,33 @@ export class MultiplayerGameScene extends Phaser.Scene {
   private createHUD(): void {
     // Top left: self stats
     this.goldText = this.add.text(10, 10, 'Gold: 50', {
-      fontSize: '16px', fontFamily: 'monospace', color: '#ffdd00',
+      fontSize: '16px', fontFamily: "'Courier New', monospace", color: '#ffdd00',
     }).setDepth(100);
 
     this.xpText = this.add.text(10, 30, 'XP: 0', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#88aaff',
+      fontSize: '14px', fontFamily: "'Courier New', monospace", color: '#88aaff',
     }).setDepth(100);
 
     this.ageText = this.add.text(10, 50, 'Age 1: Prehistoric', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '14px', fontFamily: "'Trebuchet MS', 'Segoe UI', sans-serif", color: '#ffffff',
     }).setDepth(100);
 
     this.baseHpText = this.add.text(10, 70, 'Base HP: 500/500', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#44ff44',
+      fontSize: '14px', fontFamily: "'Courier New', monospace", color: '#44ff44',
     }).setDepth(100);
 
     // Top right: opponent stats
     this.opponentAgeText = this.add.text(1270, 10, `${this.opponentName} - Age 1`, {
-      fontSize: '14px', fontFamily: 'monospace', color: '#ff8888',
+      fontSize: '14px', fontFamily: "'Trebuchet MS', 'Segoe UI', sans-serif", color: '#ff8888',
     }).setOrigin(1, 0).setDepth(100);
 
     this.opponentBaseHpText = this.add.text(1270, 30, 'Base HP: 500/500', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#ff6666',
+      fontSize: '14px', fontFamily: "'Courier New', monospace", color: '#ff6666',
     }).setOrigin(1, 0).setDepth(100);
 
     // Latency
     this.latencyText = this.add.text(1270, 50, 'Ping: 0ms', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#666688',
+      fontSize: '12px', fontFamily: "'Courier New', monospace", color: '#666688',
     }).setOrigin(1, 0).setDepth(100);
 
     // Unit buttons at bottom
@@ -253,7 +253,7 @@ export class MultiplayerGameScene extends Phaser.Scene {
       const x = 200 + i * 220;
       const btn = this.add.text(x, 680, `[${keyLabels[i]}] ${unitNames[i]}`, {
         fontSize: '14px',
-        fontFamily: 'monospace',
+        fontFamily: "'Impact', sans-serif",
         color: '#aaaacc',
         backgroundColor: '#1a1a2e',
         padding: { x: 10, y: 6 },
@@ -266,7 +266,7 @@ export class MultiplayerGameScene extends Phaser.Scene {
     // Evolve button
     const evolveBtn = this.add.text(1050, 680, '[T] Evolve', {
       fontSize: '14px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', sans-serif",
       color: '#cc88ff',
       backgroundColor: '#221144',
       padding: { x: 10, y: 6 },
@@ -541,17 +541,17 @@ export class MultiplayerGameScene extends Phaser.Scene {
 
     // Title
     this.add.text(640, 280, titleText, {
-      fontSize: '48px', fontFamily: 'monospace', color: titleColor, fontStyle: 'bold',
+      fontSize: '48px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: titleColor, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(9999);
 
     // ELO change
     this.add.text(640, 340, `ELO: ${myNewElo} (${eloSign}${myEloDelta})`, {
-      fontSize: '24px', fontFamily: 'monospace', color: eloColor,
+      fontSize: '24px', fontFamily: "'Courier New', monospace", color: eloColor,
     }).setOrigin(0.5).setDepth(9999);
 
     // Rematch button
     const rematchBtn = this.add.text(540, 410, 'Rematch', {
-      fontSize: '20px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '20px', fontFamily: "'Impact', sans-serif", color: '#ffffff',
       backgroundColor: '#224422', padding: { x: 20, y: 8 },
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true });
 
@@ -565,7 +565,7 @@ export class MultiplayerGameScene extends Phaser.Scene {
 
     // Main menu button
     const menuBtn = this.add.text(740, 410, 'Main Menu', {
-      fontSize: '20px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '20px', fontFamily: "'Impact', sans-serif", color: '#ffffff',
       backgroundColor: '#333333', padding: { x: 20, y: 8 },
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true });
 
@@ -583,15 +583,15 @@ export class MultiplayerGameScene extends Phaser.Scene {
     this.add.rectangle(640, 360, 400, 200, 0x000000, 0.85).setDepth(9998);
 
     this.add.text(640, 330, 'DISCONNECTED', {
-      fontSize: '36px', fontFamily: 'monospace', color: '#ff4444', fontStyle: 'bold',
+      fontSize: '36px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ff4444', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(9999);
 
-    const menuBtn = this.add.text(640, 400, 'Main Menu', {
-      fontSize: '20px', fontFamily: 'monospace', color: '#ffffff',
+    const menuBtn2 = this.add.text(640, 400, 'Main Menu', {
+      fontSize: '20px', fontFamily: "'Impact', sans-serif", color: '#ffffff',
       backgroundColor: '#333333', padding: { x: 20, y: 8 },
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true });
 
-    menuBtn.on('pointerdown', () => this.cleanupAndExit());
+    menuBtn2.on('pointerdown', () => this.cleanupAndExit());
   }
 
   private cleanupAndExit(): void {

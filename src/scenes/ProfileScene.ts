@@ -29,7 +29,7 @@ export class ProfileScene extends Phaser.Scene {
 
     // Title
     this.add.text(cx, 40, 'PLAYER PROFILE', {
-      fontSize: '36px', fontFamily: 'monospace', color: '#ffffff', fontStyle: 'bold',
+      fontSize: '36px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     // Stats section (left half)
@@ -40,7 +40,7 @@ export class ProfileScene extends Phaser.Scene {
 
     // Back button
     const backBtn = this.add.text(80, 680, 'Back', {
-      fontSize: '18px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '18px', fontFamily: "'Trebuchet MS', sans-serif", color: '#ffffff',
       backgroundColor: '#333333', padding: { x: 20, y: 8 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
@@ -54,7 +54,7 @@ export class ProfileScene extends Phaser.Scene {
     const campaign = this.campaignManager.getProgress();
 
     this.add.text(cx, startY, 'Statistics', {
-      fontSize: '22px', fontFamily: 'monospace', color: '#ffd700', fontStyle: 'bold',
+      fontSize: '22px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffd700', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const lines: [string, string][] = [
@@ -83,11 +83,11 @@ export class ProfileScene extends Phaser.Scene {
       }
 
       this.add.text(cx - 140, y, label, {
-        fontSize: '13px', fontFamily: 'monospace', color: '#aaaaaa',
+        fontSize: '13px', fontFamily: "'Trebuchet MS', sans-serif", color: '#aaaaaa',
       }).setOrigin(0, 0.5);
 
       this.add.text(cx + 140, y, value, {
-        fontSize: '13px', fontFamily: 'monospace', color: '#ffffff',
+        fontSize: '13px', fontFamily: "'Courier New', Courier, monospace", color: '#ffffff',
       }).setOrigin(1, 0.5);
 
       y += 28;
@@ -98,12 +98,12 @@ export class ProfileScene extends Phaser.Scene {
     const achievements = this.achievementManager.getAll();
 
     this.add.text(cx, startY, 'Achievements', {
-      fontSize: '22px', fontFamily: 'monospace', color: '#ffd700', fontStyle: 'bold',
+      fontSize: '22px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffd700', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const unlockedCount = achievements.filter((a: AchievementState) => a.unlocked).length;
     this.add.text(cx, startY + 28, `${unlockedCount} / ${achievements.length} unlocked`, {
-      fontSize: '12px', fontFamily: 'monospace', color: '#888888',
+      fontSize: '12px', fontFamily: "'Courier New', Courier, monospace", color: '#888888',
     }).setOrigin(0.5);
 
     // List achievements (scrollable via clipping)
@@ -116,21 +116,21 @@ export class ProfileScene extends Phaser.Scene {
       const color = ach.unlocked ? '#44ff44' : '#555555';
 
       this.add.text(cx - 200, y, icon, {
-        fontSize: '16px', fontFamily: 'monospace', color: ach.unlocked ? '#ffd700' : '#444444',
+        fontSize: '16px', fontFamily: "'Courier New', Courier, monospace", color: ach.unlocked ? '#ffd700' : '#444444',
         fontStyle: 'bold',
       }).setOrigin(0, 0.5);
 
       this.add.text(cx - 180, y, ach.config.name, {
-        fontSize: '12px', fontFamily: 'monospace', color,
+        fontSize: '12px', fontFamily: "'Trebuchet MS', sans-serif", color,
       }).setOrigin(0, 0.5);
 
       if (ach.unlocked) {
         this.add.text(cx + 200, y, ach.config.description, {
-          fontSize: '10px', fontFamily: 'monospace', color: '#888888',
+          fontSize: '10px', fontFamily: "'Trebuchet MS', sans-serif", color: '#888888',
         }).setOrigin(1, 0.5);
       } else {
         this.add.text(cx + 200, y, 'Locked', {
-          fontSize: '10px', fontFamily: 'monospace', color: '#444444',
+          fontSize: '10px', fontFamily: "'Trebuchet MS', sans-serif", color: '#444444',
         }).setOrigin(1, 0.5);
       }
 
@@ -139,7 +139,7 @@ export class ProfileScene extends Phaser.Scene {
 
     if (achievements.length > maxVisible) {
       this.add.text(cx, y, `... and ${achievements.length - maxVisible} more`, {
-        fontSize: '11px', fontFamily: 'monospace', color: '#666666',
+        fontSize: '11px', fontFamily: "'Trebuchet MS', sans-serif", color: '#666666',
       }).setOrigin(0.5);
     }
   }

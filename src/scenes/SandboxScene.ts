@@ -94,29 +94,29 @@ export class SandboxScene extends Phaser.Scene {
 
     // ── Top bar ──
     this.add.text(640, 15, 'SANDBOX MODE', {
-      fontSize: '24px', fontFamily: 'monospace', color: '#ffffff', fontStyle: 'bold',
+      fontSize: '24px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     this.statusText = this.add.text(640, 42, 'Place units, then click FIGHT!', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#aaaacc',
+      fontSize: '12px', fontFamily: "'Trebuchet MS', sans-serif", color: '#aaaacc',
     }).setOrigin(0.5);
 
     // Player side label
     this.add.text(200, 60, 'PLAYER (Blue)', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#4488ff', fontStyle: 'bold',
+      fontSize: '14px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#4488ff', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     this.playerCountText = this.add.text(200, 80, 'Units: 0', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#aaaacc',
+      fontSize: '12px', fontFamily: "'Courier New', Courier, monospace", color: '#aaaacc',
     }).setOrigin(0.5);
 
     // Enemy side label
     this.add.text(1080, 60, 'ENEMY (Red)', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#ff4444', fontStyle: 'bold',
+      fontSize: '14px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ff4444', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     this.enemyCountText = this.add.text(1080, 80, 'Units: 0', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#aaaacc',
+      fontSize: '12px', fontFamily: "'Courier New', Courier, monospace", color: '#aaaacc',
     }).setOrigin(0.5);
 
     // ── Control buttons ──
@@ -131,7 +131,7 @@ export class SandboxScene extends Phaser.Scene {
 
     // Back button
     const backBtn = this.add.text(60, 15, '< Back', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#aaaacc',
+      fontSize: '14px', fontFamily: "'Trebuchet MS', sans-serif", color: '#aaaacc',
       backgroundColor: '#1a1a2e', padding: { x: 12, y: 6 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
@@ -213,7 +213,7 @@ export class SandboxScene extends Phaser.Scene {
     // Speed controls
     const speeds = [0.5, 1, 2, 4];
     this.speedText = this.add.text(820, btnY, `Speed: ${this.timeScale}x`, {
-      fontSize: '13px', fontFamily: 'monospace', color: '#aaaacc',
+      fontSize: '13px', fontFamily: "'Trebuchet MS', sans-serif", color: '#aaaacc',
     }).setOrigin(0.5);
 
     for (let i = 0; i < speeds.length; i++) {
@@ -231,7 +231,7 @@ export class SandboxScene extends Phaser.Scene {
     onClick: () => void, fontSize: string = '14px'
   ): Phaser.GameObjects.Text {
     const btn = this.add.text(x, y, label, {
-      fontSize, fontFamily: 'monospace', color,
+      fontSize, fontFamily: "'Trebuchet MS', sans-serif", color,
       backgroundColor: bgColor, padding: { x: 12, y: 6 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(50);
 
@@ -247,7 +247,7 @@ export class SandboxScene extends Phaser.Scene {
     const filterY = SandboxScene.GROUND_Y + 60;
 
     this.add.text(200, filterY, 'Filter:', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#888888',
+      fontSize: '12px', fontFamily: "'Trebuchet MS', sans-serif", color: '#888888',
     }).setOrigin(0.5);
 
     // "All" button
@@ -286,12 +286,12 @@ export class SandboxScene extends Phaser.Scene {
 
     // Player spawn buttons (left side)
     this.add.text(320, panelY - 15, 'Click to spawn PLAYER unit:', {
-      fontSize: '11px', fontFamily: 'monospace', color: '#4488ff',
+      fontSize: '11px', fontFamily: "'Trebuchet MS', sans-serif", color: '#4488ff',
     }).setOrigin(0.5);
 
     // Enemy spawn buttons (right side)
     this.add.text(960, panelY - 15, 'Click to spawn ENEMY unit:', {
-      fontSize: '11px', fontFamily: 'monospace', color: '#ff4444',
+      fontSize: '11px', fontFamily: "'Trebuchet MS', sans-serif", color: '#ff4444',
     }).setOrigin(0.5);
 
     for (let i = 0; i < filteredEntries.length; i++) {
@@ -317,7 +317,7 @@ export class SandboxScene extends Phaser.Scene {
     const bgColor = faction === 'player' ? '#112244' : '#441122';
 
     const btn = this.add.text(x, y, `${config.displayName}\nA${config.age} ${config.type}`, {
-      fontSize: '9px', fontFamily: 'monospace', color,
+      fontSize: '9px', fontFamily: "'Trebuchet MS', sans-serif", color,
       backgroundColor: bgColor, padding: { x: 4, y: 2 },
     }).setInteractive({ useHandCursor: true }).setDepth(50);
 

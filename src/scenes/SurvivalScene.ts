@@ -138,20 +138,20 @@ export class SurvivalScene extends Phaser.Scene {
 
     // ── Wave UI ──
     this.waveText = this.add.text(640, 20, 'Wave 0', {
-      fontSize: '24px', fontFamily: 'monospace', color: '#ffcc00', fontStyle: 'bold',
+      fontSize: '24px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffcc00', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(100);
 
     this.waveTimerText = this.add.text(640, 48, '', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#aaaacc',
+      fontSize: '14px', fontFamily: "'Trebuchet MS', sans-serif", color: '#aaaacc',
     }).setOrigin(0.5).setDepth(100);
 
     this.enemiesText = this.add.text(640, 68, '', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#ff8888',
+      fontSize: '12px', fontFamily: "'Courier New', Courier, monospace", color: '#ff8888',
     }).setOrigin(0.5).setDepth(100);
 
     // Best wave display
     this.add.text(1200, 20, `Best: Wave ${this.bestWave}`, {
-      fontSize: '12px', fontFamily: 'monospace', color: '#666688',
+      fontSize: '12px', fontFamily: "'Courier New', Courier, monospace", color: '#666688',
     }).setOrigin(0.5).setDepth(100);
 
     // Setup input
@@ -383,7 +383,7 @@ export class SurvivalScene extends Phaser.Scene {
       this.gameManager.pause();
       // Do NOT call this.scene.pause() — it prevents input from unpausing
       const pauseText = this.add.text(640, 360, 'PAUSED\n\nPress ESC to resume', {
-        fontSize: '32px', fontFamily: 'monospace', color: '#ffffff',
+        fontSize: '32px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffffff',
         align: 'center', backgroundColor: '#00000088', padding: { x: 40, y: 20 },
       }).setOrigin(0.5).setDepth(9999);
 
@@ -424,7 +424,7 @@ export class SurvivalScene extends Phaser.Scene {
 
     // Show wave announcement
     const announcement = this.add.text(640, 300, `WAVE ${wave}`, {
-      fontSize: '40px', fontFamily: 'monospace', color: '#ffcc00',
+      fontSize: '40px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffcc00',
       fontStyle: 'bold', stroke: '#000000', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(8000).setAlpha(0);
 
@@ -468,7 +468,7 @@ export class SurvivalScene extends Phaser.Scene {
     for (const m of milestones) {
       if (wave === m.wave) {
         const milestoneText = this.add.text(640, 200, `MILESTONE: ${m.title.toUpperCase()}!`, {
-          fontSize: '28px', fontFamily: 'monospace', color: '#ffcc00',
+          fontSize: '28px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffcc00',
           fontStyle: 'bold', stroke: '#000000', strokeThickness: 4,
           backgroundColor: '#00000088', padding: { x: 20, y: 10 },
         }).setOrigin(0.5).setDepth(8500).setAlpha(0);
@@ -502,7 +502,7 @@ export class SurvivalScene extends Phaser.Scene {
 
     // Title
     const title = this.add.text(0, -180, 'CHOOSE A BUFF', {
-      fontSize: '28px', fontFamily: 'monospace', color: '#ffcc00', fontStyle: 'bold',
+      fontSize: '28px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffcc00', fontStyle: 'bold',
     }).setOrigin(0.5);
     this.buffContainer.add(title);
 
@@ -533,28 +533,28 @@ export class SurvivalScene extends Phaser.Scene {
 
     // Category label
     const catLabel = this.add.text(x, y - h / 2 + 20, buff.category.toUpperCase(), {
-      fontSize: '11px', fontFamily: 'monospace', color: categoryHex, fontStyle: 'bold',
+      fontSize: '11px', fontFamily: "'Trebuchet MS', sans-serif", color: categoryHex, fontStyle: 'bold',
     }).setOrigin(0.5);
     this.buffContainer.add(catLabel);
 
     // Rarity
     if (buff.rarity === 'legendary') {
       const rarityLabel = this.add.text(x, y - h / 2 + 36, 'LEGENDARY', {
-        fontSize: '10px', fontFamily: 'monospace', color: '#aa44ff', fontStyle: 'bold',
+        fontSize: '10px', fontFamily: "'Trebuchet MS', sans-serif", color: '#aa44ff', fontStyle: 'bold',
       }).setOrigin(0.5);
       this.buffContainer.add(rarityLabel);
     }
 
     // Name
     const nameText = this.add.text(x, y - 20, buff.name, {
-      fontSize: '16px', fontFamily: 'monospace', color: '#ffffff', fontStyle: 'bold',
+      fontSize: '16px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffffff', fontStyle: 'bold',
       wordWrap: { width: w - 20 }, align: 'center',
     }).setOrigin(0.5);
     this.buffContainer.add(nameText);
 
     // Description
     const descText = this.add.text(x, y + 30, buff.description, {
-      fontSize: '12px', fontFamily: 'monospace', color: '#aaaacc',
+      fontSize: '12px', fontFamily: "'Trebuchet MS', sans-serif", color: '#aaaacc',
       wordWrap: { width: w - 20 }, align: 'center',
     }).setOrigin(0.5);
     this.buffContainer.add(descText);
@@ -591,7 +591,7 @@ export class SurvivalScene extends Phaser.Scene {
 
     // Confirmation text
     const confirmText = this.add.text(640, 300, `${buff.name} activated!`, {
-      fontSize: '20px', fontFamily: 'monospace',
+      fontSize: '20px', fontFamily: "'Trebuchet MS', sans-serif",
       color: BuffManager.getCategoryColorHex(buff.category),
       fontStyle: 'bold', stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(8000).setAlpha(0);
@@ -628,7 +628,7 @@ export class SurvivalScene extends Phaser.Scene {
     this.particles.spawnMagic(SurvivalScene.PLAYER_BASE_X, SurvivalScene.GROUND_Y - 40, 0x8844ff);
 
     const ageNameText = this.add.text(640, 280, ageName, {
-      fontSize: '36px', fontFamily: 'monospace', color: '#ffdd00',
+      fontSize: '36px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffdd00',
       fontStyle: 'bold', stroke: '#000000', strokeThickness: 6,
     }).setOrigin(0.5).setDepth(8500).setAlpha(0);
 
@@ -789,29 +789,29 @@ export class SurvivalScene extends Phaser.Scene {
     this.add.rectangle(640, 360, 500, 350, 0x000000, 0.9).setDepth(9998);
 
     this.add.text(640, 230, 'GAME OVER', {
-      fontSize: '40px', fontFamily: 'monospace', color: '#ff4444', fontStyle: 'bold',
+      fontSize: '40px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ff4444', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(9999);
 
     this.add.text(640, 280, `Wave Reached: ${wave}`, {
-      fontSize: '20px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '20px', fontFamily: "'Trebuchet MS', sans-serif", color: '#ffffff',
     }).setOrigin(0.5).setDepth(9999);
 
     this.add.text(640, 310, `Milestone: ${achieved}`, {
-      fontSize: '16px', fontFamily: 'monospace', color: '#ffcc00',
+      fontSize: '16px', fontFamily: "'Trebuchet MS', sans-serif", color: '#ffcc00',
     }).setOrigin(0.5).setDepth(9999);
 
     this.add.text(640, 340, `Buffs Collected: ${activeBuffs.length}`, {
-      fontSize: '14px', fontFamily: 'monospace', color: '#aaaacc',
+      fontSize: '14px', fontFamily: "'Courier New', Courier, monospace", color: '#aaaacc',
     }).setOrigin(0.5).setDepth(9999);
 
     if (wave > this.bestWave) {
       this.add.text(640, 370, 'NEW BEST!', {
-        fontSize: '18px', fontFamily: 'monospace', color: '#44ff44', fontStyle: 'bold',
+        fontSize: '18px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#44ff44', fontStyle: 'bold',
       }).setOrigin(0.5).setDepth(9999);
     }
 
     const menuBtn = this.add.text(640, 430, 'Main Menu', {
-      fontSize: '20px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '20px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffffff',
       backgroundColor: '#333333', padding: { x: 20, y: 8 },
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true });
 

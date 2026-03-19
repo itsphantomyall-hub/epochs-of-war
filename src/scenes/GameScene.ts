@@ -462,18 +462,35 @@ export class GameScene extends Phaser.Scene {
     this.entityRects = new Map();
     this.entitySprites = new Map();
 
+    // ── Loading indicator while generating procedural textures ──
+    const loadText = this.add.text(640, 360, 'Generating world...', {
+      fontSize: '20px',
+      fontFamily: "'Trebuchet MS', sans-serif",
+      color: '#8888aa',
+    }).setOrigin(0.5).setDepth(10000);
+
+    const loadBar = this.add.rectangle(640, 400, 0, 8, 0xFFD700).setOrigin(0.5).setDepth(10000);
+
     // ── Procedural sprite generation ──
     this.spriteFactory = new ProceduralSpriteFactory(this);
     this.spriteFactory.generateAll();
+    loadBar.setSize(100, 8);
 
     this.baseRenderer = new BaseRenderer(this);
     this.baseRenderer.generateAll();
+    loadBar.setSize(200, 8);
 
     this.turretRendererFactory = new TurretRenderer(this);
     this.turretRendererFactory.generateAll();
+    loadBar.setSize(300, 8);
 
     this.backgroundRenderer = new BackgroundRenderer(this);
     this.backgroundRenderer.generateAll();
+    loadBar.setSize(400, 8);
+
+    // Remove loading UI
+    loadText.destroy();
+    loadBar.destroy();
 
     // ── Particle manager ──
     this.particles = new ParticleManager(this);
@@ -855,6 +872,33 @@ export class GameScene extends Phaser.Scene {
       );
       const spot = this.add.rectangle(x, y, w, h, shade).setDepth(-9).setAlpha(0.6);
       this.groundDetails.push(spot);
+    }
+
+    // Grass tufts along the grass line
+    for (let i = 0; i < 30; i++) {
+      const x = Math.random() * 1280;
+      const h2 = 3 + Math.random() * 5;
+      const gfx = this.add.graphics().setDepth(-8);
+      gfx.fillStyle(0x558833 + Math.floor(Math.random() * 0x222200), 0.6);
+      gfx.fillRect(x, GameScene.GROUND_Y - h2, 2, h2);
+    }
+
+    // Small stones on the ground
+    for (let i = 0; i < 15; i++) {
+      const x = Math.random() * 1280;
+      const y = GameScene.GROUND_Y + 8 + Math.random() * 40;
+      const gfx = this.add.graphics().setDepth(-8);
+      gfx.fillStyle(0x555544, 0.4);
+      gfx.fillCircle(x, y, 1 + Math.random() * 2);
+    }
+
+    // Dirt texture patches
+    for (let i = 0; i < 10; i++) {
+      const x = Math.random() * 1280;
+      const y = GameScene.GROUND_Y + 15 + Math.random() * 30;
+      const gfx = this.add.graphics().setDepth(-9);
+      gfx.fillStyle(0x553322, 0.15);
+      gfx.fillRect(x, y, 8 + Math.random() * 12, 3 + Math.random() * 4);
     }
   }
 
@@ -1400,7 +1444,7 @@ export class GameScene extends Phaser.Scene {
       // which would prevent the ESC key from ever unpausing.
       const pauseText = this.add.text(640, 360, 'PAUSED\n\nPress ESC to resume', {
         fontSize: '32px',
-        fontFamily: 'monospace',
+        fontFamily: "'Impact', 'Arial Black', sans-serif",
         color: '#ffffff',
         align: 'center',
         backgroundColor: '#00000088',
@@ -1787,8 +1831,8 @@ export class GameScene extends Phaser.Scene {
 
       // Terrain name label
       const label = this.add.text(centerX, y - 6, zone.config.name, {
-        fontSize: '10px',
-        fontFamily: 'monospace',
+        fontSize: '11px',
+        fontFamily: "'Trebuchet MS', sans-serif",
         color: '#ffffff',
       }).setOrigin(0.5).setDepth(-4).setAlpha(0.5);
       this.terrainZoneLabels.push(label);
@@ -1802,8 +1846,8 @@ export class GameScene extends Phaser.Scene {
     this.weatherOverlay.setVisible(false);
 
     this.weatherText = this.add.text(0, 0, '', {
-      fontSize: '11px',
-      fontFamily: 'monospace',
+      fontSize: '12px',
+      fontFamily: "'Trebuchet MS', sans-serif",
       color: '#cccccc',
     }).setDepth(10).setAlpha(0.8);
   }
@@ -2032,32 +2076,84 @@ export class GameScene extends Phaser.Scene {
   // ─────────────────────── END SCREEN ───────────────────────
 
   private showEndScreen(text: string, color: string): void {
-    const panelH = this.mode === 'campaign' && this.campaignStars ? 240 : 200;
-    this.add.rectangle(640, 360, 400, panelH, 0x000000, 0.85).setDepth(9998);
-    this.add.text(640, 310, text, {
-      fontSize: '48px', fontFamily: 'monospace', color, fontStyle: 'bold',
+    // Full screen dim
+    this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.7).setDepth(9990);
+
+    // Result panel background
+    const colorNum = parseInt(color.replace('#', ''), 16);
+    this.add.rectangle(640, 320, 500, 380, 0x111133, 0.95)
+      .setStrokeStyle(3, colorNum)
+      .setDepth(9991);
+
+    // Victory/Defeat title
+    this.add.text(640, 170, text, {
+      fontSize: '52px',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
+      color: color,
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 3,
     }).setOrigin(0.5).setDepth(9999);
+
+    // Stats breakdown
+    const stats = [
+      { label: 'Time', value: this.formatTime(this.gameState.elapsedTime) },
+      { label: 'Age Reached', value: `Age ${this.gameState.player.currentAge}` },
+      { label: 'Gold Earned', value: `${Math.floor(this.gameState.player.gold)}` },
+      { label: 'Base HP', value: `${Math.ceil(this.gameState.player.baseHp)}/${this.gameState.player.baseMaxHp}` },
+    ];
+
+    for (let i = 0; i < stats.length; i++) {
+      const y = 230 + i * 40;
+      // Label (left-aligned)
+      this.add.text(440, y, stats[i].label, {
+        fontSize: '16px',
+        fontFamily: "'Trebuchet MS', sans-serif",
+        color: '#8888aa',
+      }).setOrigin(0, 0.5).setDepth(9999);
+      // Value (right-aligned)
+      this.add.text(840, y, stats[i].value, {
+        fontSize: '18px',
+        fontFamily: "'Courier New', monospace",
+        color: '#ffffff',
+        fontStyle: 'bold',
+      }).setOrigin(1, 0.5).setDepth(9999);
+    }
 
     // Campaign: show star rating
     if (this.mode === 'campaign' && this.campaignStars) {
       const starText = '\u2605'.repeat(this.campaignStars) + '\u2606'.repeat(3 - this.campaignStars);
-      this.add.text(640, 365, starText, {
-        fontSize: '36px', fontFamily: 'monospace', color: '#FFD700',
+      this.add.text(640, 420, starText, {
+        fontSize: '36px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#FFD700',
       }).setOrigin(0.5).setDepth(9999);
     }
 
+    // Menu button
     const btnText = this.mode === 'campaign' ? 'Back to Campaign' : 'Main Menu';
     const targetScene = this.mode === 'campaign' ? 'CampaignMapScene' : 'MainMenuScene';
+    const btnY = this.mode === 'campaign' && this.campaignStars ? 475 : 450;
 
-    const menuBtn = this.add.text(640, this.mode === 'campaign' && this.campaignStars ? 420 : 400, btnText, {
-      fontSize: '20px', fontFamily: 'monospace', color: '#ffffff',
-      backgroundColor: '#333333', padding: { x: 20, y: 8 },
+    const menuBtn = this.add.text(640, btnY, btnText, {
+      fontSize: '22px',
+      fontFamily: "'Impact', sans-serif",
+      color: '#ffffff',
+      backgroundColor: '#333355',
+      padding: { x: 30, y: 12 },
+      fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true });
 
+    menuBtn.on('pointerover', () => menuBtn.setBackgroundColor('#444477'));
+    menuBtn.on('pointerout', () => menuBtn.setBackgroundColor('#333355'));
     menuBtn.on('pointerdown', () => {
       // shutdown() is called automatically by Phaser when scene.start() triggers
       this.scene.start(targetScene);
     });
+  }
+
+  private formatTime(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
   /**

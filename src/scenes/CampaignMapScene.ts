@@ -26,8 +26,8 @@ export class CampaignMapScene extends Phaser.Scene {
     // Title
     this.add.text(cx, 30, 'CAMPAIGN', {
       fontSize: '36px',
-      fontFamily: 'monospace',
-      color: '#ffffff',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
+      color: '#ffd700',
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
@@ -35,7 +35,7 @@ export class CampaignMapScene extends Phaser.Scene {
     const progress = this.campaignManager.getProgress();
     this.add.text(cx, 65, `Stars: ${progress.totalStars} / ${progress.totalMissions * 3}  |  Missions: ${progress.missionsCompleted} / ${progress.totalMissions}`, {
       fontSize: '14px',
-      fontFamily: 'monospace',
+      fontFamily: "'Courier New', Courier, monospace",
       color: '#aaaacc',
     }).setOrigin(0.5);
 
@@ -59,7 +59,7 @@ export class CampaignMapScene extends Phaser.Scene {
     // Back button
     const backBtn = this.add.text(60, height - 40, '< Back', {
       fontSize: '18px',
-      fontFamily: 'monospace',
+      fontFamily: "'Trebuchet MS', sans-serif",
       color: '#aaaacc',
       backgroundColor: '#1a1a2e',
       padding: { x: 16, y: 8 },
@@ -80,7 +80,7 @@ export class CampaignMapScene extends Phaser.Scene {
     // Continent name
     this.add.text(cx, cy - h / 2 + 16, continent.name, {
       fontSize: '16px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
       color: '#88aaff',
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -88,7 +88,7 @@ export class CampaignMapScene extends Phaser.Scene {
     // Age range label
     this.add.text(cx, cy - h / 2 + 34, `Ages ${continent.ageRange[0]}-${continent.ageRange[1]}`, {
       fontSize: '11px',
-      fontFamily: 'monospace',
+      fontFamily: "'Trebuchet MS', sans-serif",
       color: '#666688',
     }).setOrigin(0.5);
 
@@ -123,7 +123,7 @@ export class CampaignMapScene extends Phaser.Scene {
       // Mission number
       this.add.text(mx, my, String(mission.id), {
         fontSize: '11px',
-        fontFamily: 'monospace',
+        fontFamily: "'Courier New', Courier, monospace",
         color: unlocked ? '#ffffff' : '#555555',
         fontStyle: 'bold',
       }).setOrigin(0.5);
@@ -133,7 +133,7 @@ export class CampaignMapScene extends Phaser.Scene {
         const starStr = '*'.repeat(stars);
         this.add.text(mx, my + 20, starStr, {
           fontSize: '10px',
-          fontFamily: 'monospace',
+          fontFamily: "'Courier New', Courier, monospace",
           color: '#ffcc00',
         }).setOrigin(0.5);
       }
@@ -142,7 +142,7 @@ export class CampaignMapScene extends Phaser.Scene {
       const typeChar = this.getMissionTypeChar(mission.type);
       this.add.text(mx, my + 32, typeChar, {
         fontSize: '9px',
-        fontFamily: 'monospace',
+        fontFamily: "'Trebuchet MS', sans-serif",
         color: '#666688',
       }).setOrigin(0.5);
 
@@ -196,7 +196,7 @@ export class CampaignMapScene extends Phaser.Scene {
     // Title
     const title = this.add.text(0, -panelH / 2 + 25, mission.title, {
       fontSize: '22px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
       color: '#ffffff',
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -205,7 +205,7 @@ export class CampaignMapScene extends Phaser.Scene {
     // Type + difficulty
     const typeText = this.add.text(0, -panelH / 2 + 52, `${mission.type.toUpperCase()} | ${mission.difficulty.toUpperCase()}`, {
       fontSize: '12px',
-      fontFamily: 'monospace',
+      fontFamily: "'Trebuchet MS', sans-serif",
       color: '#88aacc',
     }).setOrigin(0.5);
     this.detailPanel.add(typeText);
@@ -213,7 +213,7 @@ export class CampaignMapScene extends Phaser.Scene {
     // Description
     const desc = this.add.text(0, -panelH / 2 + 85, mission.description, {
       fontSize: '13px',
-      fontFamily: 'monospace',
+      fontFamily: "'Trebuchet MS', sans-serif",
       color: '#cccccc',
       wordWrap: { width: panelW - 40 },
       align: 'center',
@@ -224,7 +224,7 @@ export class CampaignMapScene extends Phaser.Scene {
     if (mission.modifiers.length > 0) {
       const modText = this.add.text(0, -panelH / 2 + 130, `Modifiers: ${mission.modifiers.join(', ')}`, {
         fontSize: '11px',
-        fontFamily: 'monospace',
+        fontFamily: "'Trebuchet MS', sans-serif",
         color: '#ff8844',
         wordWrap: { width: panelW - 40 },
         align: 'center',
@@ -235,7 +235,7 @@ export class CampaignMapScene extends Phaser.Scene {
     // Star thresholds
     const starInfo = this.add.text(0, -panelH / 2 + 160, `3 Stars: < ${mission.starThresholds.time}s, HP > ${mission.starThresholds.hpPercent}%`, {
       fontSize: '11px',
-      fontFamily: 'monospace',
+      fontFamily: "'Courier New', Courier, monospace",
       color: '#ffcc00',
     }).setOrigin(0.5);
     this.detailPanel.add(starInfo);
@@ -244,7 +244,7 @@ export class CampaignMapScene extends Phaser.Scene {
     const currentStars = this.campaignManager.getStars(mission.id);
     const starsDisplay = this.add.text(0, -panelH / 2 + 185, `Current: ${'*'.repeat(currentStars)}${'o'.repeat(3 - currentStars)}`, {
       fontSize: '14px',
-      fontFamily: 'monospace',
+      fontFamily: "'Courier New', Courier, monospace",
       color: '#ffcc00',
     }).setOrigin(0.5);
     this.detailPanel.add(starsDisplay);
@@ -253,7 +253,7 @@ export class CampaignMapScene extends Phaser.Scene {
     const rewardText = `Rewards: ${mission.rewards.coins} coins${mission.rewards.unlock ? ' + ' + mission.rewards.unlock : ''}`;
     const rewards = this.add.text(0, -panelH / 2 + 210, rewardText, {
       fontSize: '11px',
-      fontFamily: 'monospace',
+      fontFamily: "'Trebuchet MS', sans-serif",
       color: '#44ff44',
     }).setOrigin(0.5);
     this.detailPanel.add(rewards);
@@ -261,7 +261,7 @@ export class CampaignMapScene extends Phaser.Scene {
     // Start button
     const startBtn = this.add.text(0, panelH / 2 - 70, 'START MISSION', {
       fontSize: '18px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
       color: '#ffffff',
       backgroundColor: '#2244aa',
       padding: { x: 30, y: 10 },
@@ -282,7 +282,7 @@ export class CampaignMapScene extends Phaser.Scene {
     // Close button
     const closeBtn = this.add.text(0, panelH / 2 - 30, 'Close', {
       fontSize: '14px',
-      fontFamily: 'monospace',
+      fontFamily: "'Trebuchet MS', sans-serif",
       color: '#aaaacc',
       backgroundColor: '#1a1a2e',
       padding: { x: 20, y: 6 },

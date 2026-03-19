@@ -28,7 +28,7 @@ export class SettingsScene extends Phaser.Scene {
 
     // Title
     this.add.text(cx, 40, 'SETTINGS', {
-      fontSize: '36px', fontFamily: 'monospace', color: '#ffffff', fontStyle: 'bold',
+      fontSize: '36px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     // Category tabs
@@ -47,7 +47,7 @@ export class SettingsScene extends Phaser.Scene {
       const cat = categories[i];
       const x = tabStartX + i * tabSpacing;
       const btn = this.add.text(x, tabY, cat.label, {
-        fontSize: '16px', fontFamily: 'monospace',
+        fontSize: '16px', fontFamily: "'Trebuchet MS', sans-serif",
         color: this.activeCategory === cat.value ? '#44ff44' : '#888888',
         backgroundColor: this.activeCategory === cat.value ? '#224422' : '#1a1a2e',
         padding: { x: 16, y: 8 },
@@ -67,7 +67,7 @@ export class SettingsScene extends Phaser.Scene {
 
     // Back button
     const backBtn = this.add.text(80, 680, 'Back', {
-      fontSize: '18px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '18px', fontFamily: "'Trebuchet MS', sans-serif", color: '#ffffff',
       backgroundColor: '#333333', padding: { x: 20, y: 8 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
@@ -146,11 +146,11 @@ export class SettingsScene extends Phaser.Scene {
       const y = startY + i * 40;
 
       const keyText = this.add.text(cx - 100, y, `[${key}]`, {
-        fontSize: '14px', fontFamily: 'monospace', color: '#ffd700',
+        fontSize: '14px', fontFamily: "'Courier New', Courier, monospace", color: '#ffd700',
       }).setOrigin(1, 0.5);
 
       const actionText = this.add.text(cx - 80, y, action, {
-        fontSize: '14px', fontFamily: 'monospace', color: '#cccccc',
+        fontSize: '14px', fontFamily: "'Trebuchet MS', sans-serif", color: '#cccccc',
       }).setOrigin(0, 0.5);
 
       this.contentGroup.add(keyText);
@@ -158,7 +158,7 @@ export class SettingsScene extends Phaser.Scene {
     }
 
     const note = this.add.text(cx, startY + bindings.length * 40 + 20, '(Keybinding remapping coming soon)', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#666666',
+      fontSize: '12px', fontFamily: "'Trebuchet MS', sans-serif", color: '#666666',
     }).setOrigin(0.5);
     this.contentGroup.add(note);
   }
@@ -169,11 +169,11 @@ export class SettingsScene extends Phaser.Scene {
     const current = this.settings.get(key) as boolean;
 
     const labelText = this.add.text(cx - 200, y, label, {
-      fontSize: '16px', fontFamily: 'monospace', color: '#cccccc',
+      fontSize: '16px', fontFamily: "'Trebuchet MS', sans-serif", color: '#cccccc',
     }).setOrigin(0, 0.5);
 
     const toggleBtn = this.add.text(cx + 150, y, current ? 'ON' : 'OFF', {
-      fontSize: '16px', fontFamily: 'monospace',
+      fontSize: '16px', fontFamily: "'Trebuchet MS', sans-serif",
       color: current ? '#44ff44' : '#ff4444',
       backgroundColor: current ? '#224422' : '#442222',
       padding: { x: 16, y: 6 },
@@ -195,7 +195,7 @@ export class SettingsScene extends Phaser.Scene {
     const current = this.settings.get(key) as number;
 
     const labelText = this.add.text(cx - 200, y, label, {
-      fontSize: '16px', fontFamily: 'monospace', color: '#cccccc',
+      fontSize: '16px', fontFamily: "'Trebuchet MS', sans-serif", color: '#cccccc',
     }).setOrigin(0, 0.5);
 
     // Slider track
@@ -209,7 +209,7 @@ export class SettingsScene extends Phaser.Scene {
 
     // Value text
     const valueText = this.add.text(trackX + trackW + 20, y, `${current}%`, {
-      fontSize: '14px', fontFamily: 'monospace', color: '#ffffff',
+      fontSize: '14px', fontFamily: "'Courier New', Courier, monospace", color: '#ffffff',
     }).setOrigin(0, 0.5);
 
     // Make track interactive
@@ -233,12 +233,12 @@ export class SettingsScene extends Phaser.Scene {
     const current = this.settings.get(key) as string;
 
     const labelText = this.add.text(cx - 200, y, label, {
-      fontSize: '16px', fontFamily: 'monospace', color: '#cccccc',
+      fontSize: '16px', fontFamily: "'Trebuchet MS', sans-serif", color: '#cccccc',
     }).setOrigin(0, 0.5);
 
     const displayName = current.charAt(0).toUpperCase() + current.slice(1);
     const cycleBtn = this.add.text(cx + 150, y, displayName, {
-      fontSize: '16px', fontFamily: 'monospace', color: '#4488ff',
+      fontSize: '16px', fontFamily: "'Trebuchet MS', sans-serif", color: '#4488ff',
       backgroundColor: '#112244', padding: { x: 16, y: 6 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 

@@ -133,6 +133,14 @@ export class HUD extends Phaser.Scene {
 
   // ── Weather display ──
   private weatherDisplayText!: Phaser.GameObjects.Text;
+  private static readonly WEATHER_ICONS: Record<string, string> = {
+    'Clear': '\u2600',
+    'Rain': '\uD83C\uDF27',
+    'Fog': '\uD83C\uDF2B',
+    'Sandstorm': '\uD83C\uDF2A',
+    'Lightning Storm': '\u26A1',
+    'Solar Flare': '\u2604',
+  };
 
   // ── Hero HP display ──
   private heroHpText!: Phaser.GameObjects.Text;
@@ -601,7 +609,8 @@ export class HUD extends Phaser.Scene {
    */
   updateWeatherText(weatherName: string): void {
     if (this.weatherDisplayText) {
-      this.weatherDisplayText.setText(`Weather: ${weatherName}`);
+      const icon = HUD.WEATHER_ICONS[weatherName] || '\u2600';
+      this.weatherDisplayText.setText(`${icon} ${weatherName}`);
     }
   }
 

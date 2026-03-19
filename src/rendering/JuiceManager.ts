@@ -191,13 +191,16 @@ export class JuiceManager {
       targetScale = 1.5;
     }
 
+    const comboFontSize = `${28 + this.comboCount * 2}px`;
+    const comboColor = this.comboCount >= 10 ? '#FF4444' : this.comboCount >= 5 ? '#FFAA00' : '#FFD700';
+
     this.comboText = this.scene.add.text(640, 80, label, {
-      fontSize: '28px',
-      fontFamily: 'monospace',
-      color,
+      fontSize: comboFontSize,
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
+      color: comboColor,
       fontStyle: 'bold',
       stroke: '#000000',
-      strokeThickness: 4,
+      strokeThickness: 3,
     }).setOrigin(0.5).setDepth(8000).setAlpha(0).setScale(0.3);
 
     // Scale up quickly (100ms), hold (500ms), fade out (400ms)
@@ -521,7 +524,7 @@ export class JuiceManager {
 
     this.lowHpText = this.scene.add.text(640, 130, 'BASE CRITICAL!', {
       fontSize: '24px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
       color: '#ff2222',
       fontStyle: 'bold',
       stroke: '#000000',

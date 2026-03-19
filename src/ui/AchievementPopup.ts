@@ -69,22 +69,22 @@ export class AchievementPopup {
     const icon = REWARD_ICONS[config.reward.type] ?? '*';
     const iconText = this.scene.add.text(startX - width / 2 + 20, y, icon, {
       fontSize: '24px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', sans-serif",
       color: '#ffd700',
       fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(10001);
 
     // Title
     const titleText = this.scene.add.text(startX - width / 2 + 50, y - 12, 'Achievement Unlocked!', {
-      fontSize: '10px',
-      fontFamily: 'monospace',
+      fontSize: '11px',
+      fontFamily: "'Trebuchet MS', sans-serif",
       color: '#ffd700',
     }).setOrigin(0, 0.5).setDepth(10001);
 
     // Name
     const nameText = this.scene.add.text(startX - width / 2 + 50, y + 8, config.name, {
       fontSize: '14px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', sans-serif",
       color: '#ffffff',
       fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001);

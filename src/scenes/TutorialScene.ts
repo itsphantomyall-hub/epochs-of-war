@@ -92,13 +92,13 @@ export class TutorialScene extends Phaser.Scene {
   private createUI(): void {
     // Lesson title
     this.lessonTitleText = this.add.text(640, 40, '', {
-      fontSize: '28px', fontFamily: 'monospace', color: '#ffffff', fontStyle: 'bold',
+      fontSize: '28px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffffff', fontStyle: 'bold',
       stroke: '#000000', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(9999);
 
     // Prompt text
     this.promptText = this.add.text(640, 100, '', {
-      fontSize: '18px', fontFamily: 'monospace', color: '#ffdd00',
+      fontSize: '18px', fontFamily: "'Trebuchet MS', sans-serif", color: '#ffdd00',
       stroke: '#000000', strokeThickness: 3,
       align: 'center',
       wordWrap: { width: 600 },
@@ -106,12 +106,12 @@ export class TutorialScene extends Phaser.Scene {
 
     // Progress
     this.progressText = this.add.text(640, 700, '', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#888888',
+      fontSize: '12px', fontFamily: "'Trebuchet MS', sans-serif", color: '#888888',
     }).setOrigin(0.5).setDepth(9999);
 
     // Skip button
     this.skipBtn = this.add.text(1200, 700, 'Skip Tutorial', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#888888',
+      fontSize: '14px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#888888',
       backgroundColor: '#222222', padding: { x: 12, y: 6 },
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true });
 
@@ -124,7 +124,7 @@ export class TutorialScene extends Phaser.Scene {
 
     // Next button (hidden until lesson complete)
     this.nextBtn = this.add.text(640, 450, 'Next Lesson', {
-      fontSize: '24px', fontFamily: 'monospace', color: '#44ff44',
+      fontSize: '24px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#44ff44',
       backgroundColor: '#224422', padding: { x: 24, y: 12 },
       fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(10000).setInteractive({ useHandCursor: true }).setVisible(false);
@@ -146,32 +146,32 @@ export class TutorialScene extends Phaser.Scene {
     const btnY = this.groundY + 60;
 
     this.spawnBtn = this.add.text(200, btnY, '[Q] Spawn Warrior', {
-      fontSize: '16px', fontFamily: 'monospace', color: '#4488ff',
+      fontSize: '16px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#4488ff',
       backgroundColor: '#112244', padding: { x: 16, y: 10 },
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true }).setVisible(false);
 
     this.turretBtn = this.add.text(420, btnY, '[Click] Build Turret', {
-      fontSize: '16px', fontFamily: 'monospace', color: '#44ff44',
+      fontSize: '16px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#44ff44',
       backgroundColor: '#114422', padding: { x: 16, y: 10 },
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true }).setVisible(false);
 
     this.evolveBtn = this.add.text(640, btnY, '[T] Evolve!', {
-      fontSize: '16px', fontFamily: 'monospace', color: '#ffdd00',
+      fontSize: '16px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ffdd00',
       backgroundColor: '#444411', padding: { x: 16, y: 10 },
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true }).setVisible(false);
 
     this.heroBtn1 = this.add.text(820, btnY, '[1] Hero Ability', {
-      fontSize: '16px', fontFamily: 'monospace', color: '#cccc44',
+      fontSize: '16px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#cccc44',
       backgroundColor: '#444411', padding: { x: 16, y: 10 },
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true }).setVisible(false);
 
     this.heroBtn2 = this.add.text(1000, btnY, '[2] Hero Ability', {
-      fontSize: '16px', fontFamily: 'monospace', color: '#cccc44',
+      fontSize: '16px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#cccc44',
       backgroundColor: '#444411', padding: { x: 16, y: 10 },
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true }).setVisible(false);
 
     this.specialBtnText = this.add.text(640, btnY + 50, '[SPACE] Special Attack', {
-      fontSize: '16px', fontFamily: 'monospace', color: '#ff4444',
+      fontSize: '16px', fontFamily: "'Impact', 'Arial Black', sans-serif", color: '#ff4444',
       backgroundColor: '#441111', padding: { x: 16, y: 10 },
     }).setOrigin(0.5).setDepth(9999).setInteractive({ useHandCursor: true }).setVisible(false);
 
@@ -455,7 +455,7 @@ export class TutorialScene extends Phaser.Scene {
 
     // +50% floating text
     const counterText = this.add.text(enemy.x, enemy.y - 30, '+50%', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#44ff44',
+      fontSize: '14px', fontFamily: "'Courier New', Courier, monospace", color: '#44ff44',
       fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(9000);
 

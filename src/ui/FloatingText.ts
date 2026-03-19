@@ -31,7 +31,7 @@ export class FloatingTextManager {
       () => {
         const t = scene.add.text(0, 0, '', {
           fontSize: '14px',
-          fontFamily: 'monospace',
+          fontFamily: "'Courier New', monospace",
           color: '#ffffff',
           stroke: '#000000',
           strokeThickness: 2,
@@ -70,7 +70,7 @@ export class FloatingTextManager {
   ): void {
     const text = this.pool.acquire();
     text.setText(message);
-    text.setStyle({ fontSize, color, fontFamily: 'monospace', stroke: '#000000', strokeThickness: 2 });
+    text.setStyle({ fontSize, color, fontFamily: "'Courier New', monospace", stroke: '#000000', strokeThickness: 2 });
     text.setPosition(x, y);
     text.setAlpha(1);
     text.setVisible(true);

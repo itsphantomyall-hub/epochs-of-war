@@ -54,7 +54,7 @@ export class MultiplayerMenuScene extends Phaser.Scene {
     // ── Title ──
     this.add.text(cx, 60, 'MULTIPLAYER', {
       fontSize: '40px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
       color: '#ffffff',
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -62,21 +62,21 @@ export class MultiplayerMenuScene extends Phaser.Scene {
     // ── Player Stats ──
     this.add.text(cx, 120, `ELO: ${this.playerElo}  |  W: ${this.wins}  L: ${this.losses}`, {
       fontSize: '16px',
-      fontFamily: 'monospace',
+      fontFamily: "'Courier New', Courier, monospace",
       color: '#aaaacc',
     }).setOrigin(0.5);
 
     // ── Status text ──
     this.statusText = this.add.text(cx, 170, '', {
       fontSize: '14px',
-      fontFamily: 'monospace',
+      fontFamily: "'Trebuchet MS', sans-serif",
       color: '#ffcc00',
     }).setOrigin(0.5);
 
     // ── Find Match button ──
     this.searchButton = this.add.text(cx, 250, 'Find Match', {
       fontSize: '24px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
       color: '#44ff44',
       backgroundColor: '#114422',
       padding: { x: 40, y: 14 },
@@ -94,7 +94,7 @@ export class MultiplayerMenuScene extends Phaser.Scene {
     // ── Cancel button (hidden initially) ──
     this.cancelButton = this.add.text(cx, 310, 'Cancel', {
       fontSize: '16px',
-      fontFamily: 'monospace',
+      fontFamily: "'Trebuchet MS', sans-serif",
       color: '#ff6666',
       backgroundColor: '#441111',
       padding: { x: 20, y: 8 },
@@ -105,14 +105,14 @@ export class MultiplayerMenuScene extends Phaser.Scene {
     // ── Custom Match section ──
     this.add.text(cx, 380, '- OR -', {
       fontSize: '14px',
-      fontFamily: 'monospace',
+      fontFamily: "'Trebuchet MS', sans-serif",
       color: '#666688',
     }).setOrigin(0.5);
 
     // Create custom match
     this.customCreateButton = this.add.text(cx - 120, 430, 'Create Match', {
       fontSize: '18px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
       color: '#4488ff',
       backgroundColor: '#112244',
       padding: { x: 20, y: 10 },
@@ -127,7 +127,7 @@ export class MultiplayerMenuScene extends Phaser.Scene {
     // Join custom match
     this.customJoinButton = this.add.text(cx + 120, 430, 'Join Match', {
       fontSize: '18px',
-      fontFamily: 'monospace',
+      fontFamily: "'Impact', 'Arial Black', sans-serif",
       color: '#cc88ff',
       backgroundColor: '#221144',
       padding: { x: 20, y: 10 },
@@ -142,7 +142,7 @@ export class MultiplayerMenuScene extends Phaser.Scene {
     // Room code display (for created matches)
     this.roomCodeDisplay = this.add.text(cx, 490, '', {
       fontSize: '28px',
-      fontFamily: 'monospace',
+      fontFamily: "'Courier New', Courier, monospace",
       color: '#ffdd00',
       fontStyle: 'bold',
     }).setOrigin(0.5).setVisible(false);
@@ -150,7 +150,7 @@ export class MultiplayerMenuScene extends Phaser.Scene {
     // Room code input (for joining matches)
     this.roomCodeInput = this.add.text(cx, 490, '', {
       fontSize: '24px',
-      fontFamily: 'monospace',
+      fontFamily: "'Courier New', Courier, monospace",
       color: '#ffffff',
       backgroundColor: '#222244',
       padding: { x: 20, y: 8 },
@@ -159,7 +159,7 @@ export class MultiplayerMenuScene extends Phaser.Scene {
     // ── Back button ──
     this.backButton = this.add.text(cx, 620, 'Back to Menu', {
       fontSize: '16px',
-      fontFamily: 'monospace',
+      fontFamily: "'Trebuchet MS', sans-serif",
       color: '#888888',
       backgroundColor: '#1a1a2e',
       padding: { x: 20, y: 8 },
